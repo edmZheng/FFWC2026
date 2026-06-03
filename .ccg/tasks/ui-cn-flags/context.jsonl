@@ -1,0 +1,11 @@
+{"_example": "Fill with {\"file\": \"path\", \"reason\": \"why\"}. Seed rows are skipped."}
+{"file": "lib/core/theme/app_theme.dart", "reason": "主题升级：Material3配色、卡片阴影、排版"}
+{"file": "lib/shared/widgets/match_tile.dart", "reason": "核心列表组件，UI重设计"}
+{"file": "lib/shared/widgets/team_badge.dart", "reason": "国旗显示，需确认flagcdn URL可用"}
+{"file": "lib/features/schedule/schedule_page.dart", "reason": "全中文：赛程/筛选/阶段"}
+{"file": "lib/features/standings/standings_page.dart", "reason": "全中文：积分榜/小组"}
+{"file": "lib/features/live/live_page.dart", "reason": "全中文：直播/暂无比赛"}
+{"file": "lib/features/teams/teams_page.dart", "reason": "全中文：球队列表"}
+{"file": "lib/features/stadiums/stadiums_page.dart", "reason": "全中文：场馆列表"}
+{"file": "lib/features/match_detail/match_detail_page.dart", "reason": "全中文：比赛详情/进球/时间"}
+{"file": "lib/app.dart", "reason": "底部导航栏标签中文化"}

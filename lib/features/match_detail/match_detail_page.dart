@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/models/match.dart';
+import '../../core/utils/match_time.dart';
 import '../../providers.dart';
 import '../../shared/widgets/score_pill.dart';
 import '../../shared/widgets/status_chip.dart';
@@ -48,7 +48,7 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
     if (match == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Match')),
-        body: const Center(child: Text('Match not found')),
+        body: const Center(child: Text('比赛信息未找到')),
       );
     }
 
@@ -65,7 +65,7 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(match.stage.label),
+        title: Text(MatchTime.chineseStage(match.stage.label)),
         actions: [StatusChip(match: match), const SizedBox(width: 12)],
       ),
       body: ListView(
@@ -94,7 +94,7 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
           const SizedBox(height: 16),
 
           // Match info
-          _section(context, 'Details', [
+          _section(context, '赛事信息', [
             if (match.stadium != null)
               _infoRow(context, Icons.stadium, match.stadium!.nameEn,
                   subtitle: '${match.stadium!.cityEn}, ${match.stadium!.countryEn}'),
@@ -103,15 +103,16 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
                   _formatDate(match.localDate!)),
             if (match.group.isNotEmpty)
               _infoRow(context, Icons.group,
-                  'Group ${match.group}  ·  Matchday ${match.matchday}'),
+                  '小组 ${match.group} · 第${match.matchday}轮'),
             if (match.timeElapsed.isNotEmpty &&
                 match.timeElapsed.toLowerCase() != 'notstarted')
-              _infoRow(context, Icons.timer, match.timeElapsed),
+              _infoRow(context, Icons.timer,
+                  MatchTime.chineseStatus(match.status, match.timeElapsed)),
           ]),
 
           // Scorers
           if (match.homeScorers.isNotEmpty || match.awayScorers.isNotEmpty)
-            _section(context, 'Goals', [
+            _section(context, '进球', [
               ..._scorerRows(context, match.homeDisplayName, match.homeScorers, cs),
               ..._scorerRows(context, match.awayDisplayName, match.awayScorers, cs),
             ]),

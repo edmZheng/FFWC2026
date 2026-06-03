@@ -14,7 +14,7 @@ class LivePage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Live'),
+        title: const Text('直播'),
         actions: [
           // Pulse indicator when live matches exist
           async.whenOrNull(
@@ -38,9 +38,9 @@ class LivePage extends ConsumerWidget {
                 children: [
                   Icon(Icons.sports_soccer, size: 64),
                   SizedBox(height: 12),
-                  Text('No live matches right now'),
+                  Text('暂无直播赛事'),
                   SizedBox(height: 4),
-                  Text('Check back during match hours',
+                  Text('比赛进行时将实时更新',
                       style: TextStyle(fontSize: 12)),
                 ],
               ),

@@ -19,8 +19,9 @@ class GroupTable extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-          child: Text('Group ${standing.groupName}',
-              style: tt.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+          child: Text('小组 ${standing.groupName}',
+              style: tt.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold, color: cs.primary)),
         ),
         Table(
           columnWidths: const {
@@ -46,7 +47,7 @@ class GroupTable extends StatelessWidget {
 
   TableRow _header(ColorScheme cs, TextTheme tt) => TableRow(
         decoration: BoxDecoration(color: cs.surfaceContainerHighest),
-        children: ['#', 'Team', 'MP', 'W', 'D', 'L', 'GD', 'GF', 'PTS']
+        children: ['#', '球队', '场', '胜', '平', '负', '净', '进', '积']
             .map((h) => _hCell(h, tt, cs))
             .toList(),
       );
@@ -56,7 +57,7 @@ class GroupTable extends StatelessWidget {
         child: Text(text,
             textAlign: TextAlign.center,
             style: tt.labelSmall?.copyWith(
-                fontWeight: FontWeight.bold, color: cs.onSurfaceVariant)),
+                fontWeight: FontWeight.bold, color: cs.primary)),
       );
 
   TableRow _row(BuildContext ctx, int pos, TeamStanding s,
@@ -74,11 +75,11 @@ class GroupTable extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: Row(
             children: [
-              TeamBadge(flagUrl: s.teamFlagUrl, size: 18),
+              TeamBadge(flagUrl: s.teamFlagUrl, iso2: '', size: 18),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(s.teamNameEn.isNotEmpty ? s.teamNameEn : s.teamId,
-                    style: tt.labelSmall,
+                    style: tt.labelSmall?.copyWith(color: Colors.white),
                     overflow: TextOverflow.ellipsis),
               ),
             ],
@@ -91,14 +92,16 @@ class GroupTable extends StatelessWidget {
         _cell('${s.gd >= 0 ? '+' : ''}${s.gd}', tt),
         _cell('${s.gf}', tt),
         _cell('${s.pts}', tt,
-            style: tt.labelSmall?.copyWith(fontWeight: FontWeight.bold)),
+            style: tt.labelSmall
+                ?.copyWith(fontWeight: FontWeight.bold, color: Colors.white)),
       ],
     );
   }
 
   Widget _cell(String text, TextTheme tt, {TextStyle? style}) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-        child:
-            Text(text, textAlign: TextAlign.center, style: style ?? tt.labelSmall),
+        child: Text(text,
+            textAlign: TextAlign.center,
+            style: style ?? tt.labelSmall?.copyWith(color: Colors.white)),
       );
 }

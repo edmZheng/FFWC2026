@@ -42,4 +42,30 @@ class MatchTime {
   /// Formats a [DateTime] to a short date: "Jun 11".
   static String formatShortDate(DateTime dt) =>
       DateFormat('MMM d').format(dt);
+
+  /// 中文状态标签
+  static String chineseStatus(MatchStatus status, String timeElapsed) {
+    switch (status) {
+      case MatchStatus.finished:
+        return '完场';
+      case MatchStatus.live:
+        final t = timeElapsed.trim();
+        if (t.isEmpty) return '进行中';
+        return t == 'HT' ? '中场休息' : '$t\'';
+      case MatchStatus.notStarted:
+        return '未开赛';
+    }
+  }
+
+  /// 中文阶段标签
+  static String chineseStage(String stageLabel) => switch (stageLabel) {
+        'Group Stage' => '小组赛',
+        'Round of 32' => '64强赛',
+        'Round of 16' => '16强赛',
+        'Quarter-Final' => '四分之一决赛',
+        'Semi-Final' => '半决赛',
+        'Third Place' => '三四名决赛',
+        'Final' => '决赛',
+        _ => stageLabel,
+      };
 }

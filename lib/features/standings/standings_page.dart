@@ -17,7 +17,7 @@ class StandingsPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Standings'),
+        title: const Text('积分榜'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -30,7 +30,7 @@ class StandingsPage extends ConsumerWidget {
         error: (e, _) => Center(child: Text(e.toString())),
         data: (standings) {
           if (standings.isEmpty) {
-            return const Center(child: Text('No standings data'));
+            return const Center(child: Text('暂无积分数据'));
           }
           return DefaultTabController(
             length: standings.length,
@@ -40,7 +40,7 @@ class StandingsPage extends ConsumerWidget {
                   isScrollable: true,
                   tabAlignment: TabAlignment.start,
                   tabs: standings
-                      .map((s) => Tab(text: 'Group ${s.groupName}'))
+                      .map((s) => Tab(text: '小组 ${s.groupName}'))
                       .toList(),
                 ),
                 Expanded(
@@ -61,7 +61,7 @@ class StandingsPage extends ConsumerWidget {
                             children: [
                               GroupTable(standing: group),
                               const SizedBox(height: 16),
-                              Text('Matches',
+                              Text('小组赛程',
                                   style: Theme.of(context)
                                       .textTheme
                                       .titleSmall

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/models/match.dart';
 import '../../providers.dart';
 import '../../shared/widgets/match_tile.dart';
+import '../../core/utils/match_time.dart';
 
 class SchedulePage extends ConsumerStatefulWidget {
   const SchedulePage({super.key});
@@ -25,7 +26,7 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
     final async = ref.watch(matchesProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Schedule'),
+        title: const Text('赛程'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -54,7 +55,7 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
               ),
               Expanded(
                 child: filtered.isEmpty
-                    ? const Center(child: Text('No matches'))
+                    ? const Center(child: Text('暂无赛程'))
                     : ListView.builder(
                         itemCount: filtered.length,
                         itemBuilder: (_, i) => MatchTile(
@@ -122,22 +123,22 @@ class _FilterBar extends StatelessWidget {
         children: [
           _DropFilter<String?>(
             value: stageFilter,
-            hint: 'Stage',
+            hint: '阶段',
             items: [null, ...MatchStage.values.map((s) => s.label)],
-            label: (v) => v ?? 'All Stages',
+            label: (v) => v == null ? '全部阶段' : MatchTime.chineseStage(v),
             onChanged: onStageChanged,
           ),
           const SizedBox(width: 8),
           _DropFilter<String?>(
             value: groupFilter,
-            hint: 'Group',
+            hint: '小组',
             items: [null, ...groups],
-            label: (v) => v == null ? 'All Groups' : 'Group $v',
+            label: (v) => v == null ? '全部小组' : '小组 $v',
             onChanged: onGroupChanged,
           ),
           const SizedBox(width: 8),
           FilterChip(
-            label: const Text('Finished'),
+            label: const Text('已完场'),
             selected: finishedOnly,
             onSelected: onFinishedToggled,
           ),
@@ -190,7 +191,7 @@ class _Error extends StatelessWidget {
             const SizedBox(height: 8),
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 12),
-            ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
+            ElevatedButton(onPressed: onRetry, child: const Text('重试')),
           ],
         ),
       );

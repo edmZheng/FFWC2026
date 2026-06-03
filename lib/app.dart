@@ -74,7 +74,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp.router(
-        title: 'World Cup 2026',
+        title: '2026 世界杯',
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
         routerConfig: router,
@@ -87,11 +87,11 @@ class _ScaffoldWithNav extends StatelessWidget {
   final Widget child;
 
   static const _tabs = [
-    ('/schedule', Icons.calendar_today, 'Schedule'),
-    ('/live', Icons.sports_soccer, 'Live'),
-    ('/standings', Icons.leaderboard, 'Standings'),
-    ('/teams', Icons.groups, 'Teams'),
-    ('/stadiums', Icons.stadium, 'Stadiums'),
+    ('/schedule', Icons.calendar_today, '赛程'),
+    ('/live', Icons.sports_soccer, '直播'),
+    ('/standings', Icons.leaderboard, '积分榜'),
+    ('/teams', Icons.groups, '球队'),
+    ('/stadiums', Icons.stadium, '场馆'),
   ];
 
   @override

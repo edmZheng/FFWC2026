@@ -22,7 +22,7 @@ class StadiumDetailPage extends ConsumerWidget {
         if (stadium == null) {
           return Scaffold(
             appBar: AppBar(title: const Text('Stadium')),
-            body: const Center(child: Text('Stadium not found')),
+            body: const Center(child: Text('场馆信息未找到')),
           );
         }
         return Scaffold(
@@ -32,17 +32,17 @@ class StadiumDetailPage extends ConsumerWidget {
             children: [
               const Icon(Icons.stadium, size: 64),
               const SizedBox(height: 12),
-              _infoRow('FIFA Name', stadium.fifaName),
-              _infoRow('City', stadium.cityEn),
-              _infoRow('Country', stadium.countryEn),
-              _infoRow('Region', stadium.region),
+              _infoRow('FIFA名称', stadium.fifaName),
+              _infoRow('所在城市', stadium.cityEn),
+              _infoRow('国家/地区', stadium.countryEn),
+              _infoRow('赛区', stadium.region),
               _infoRow(
-                  'Capacity',
+                  '场馆容量',
                   stadium.capacity > 0
-                      ? '${stadium.capacity.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+$)'), (m) => '${m[1]},')} seats'
-                      : '—'),
+                      ? '可容纳 ${stadium.capacity.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+$)'), (m) => '${m[1]},')} 名观众'
+                      : '容量未知'),
               const Divider(height: 32),
-              Text('Matches at this venue',
+              Text('将在此投入使用的赛场',
                   style: Theme.of(context)
                       .textTheme
                       .titleSmall
@@ -58,7 +58,7 @@ class StadiumDetailPage extends ConsumerWidget {
                   if (venueMatches.isEmpty) {
                     return const Padding(
                       padding: EdgeInsets.all(8),
-                      child: Text('No matches at this venue'),
+                      child: Text('暂无赛事安排'),
                     );
                   }
                   return Column(

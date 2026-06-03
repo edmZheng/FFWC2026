@@ -12,7 +12,7 @@ class TeamsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(teamsProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Teams')),
+      appBar: AppBar(title: const Text('球队')),
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(e.toString())),
@@ -35,7 +35,7 @@ class TeamsPage extends ConsumerWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    TeamBadge(flagUrl: t.flagUrl, size: 48),
+                    TeamBadge(iso2: t.iso2, flagUrl: t.flagUrl, size: 48),
                     const SizedBox(height: 8),
                     Text(
                       t.nameEn,

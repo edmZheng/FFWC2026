@@ -11,7 +11,7 @@ class StadiumsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(stadiumsProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Stadiums')),
+      appBar: AppBar(title: const Text('场馆')),
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(e.toString())),
@@ -24,7 +24,7 @@ class StadiumsPage extends ConsumerWidget {
               title: Text(s.nameEn),
               subtitle: Text('${s.cityEn}, ${s.countryEn}'),
               trailing: Text(
-                '${_fmt(s.capacity)} cap.',
+                _cap(s.capacity),
                 style: Theme.of(context).textTheme.labelSmall,
               ),
               onTap: () => context.go('/stadium/${s.id}'),
@@ -35,10 +35,8 @@ class StadiumsPage extends ConsumerWidget {
     );
   }
 
-  String _fmt(int n) {
-    if (n == 0) return '—';
-    return n >= 1000
-        ? '${(n / 1000).toStringAsFixed(0)}k'
-        : '$n';
+  String _cap(int n) {
+    if (n == 0) return '容量未知';
+    return '容纳 $n 人';
   }
 }

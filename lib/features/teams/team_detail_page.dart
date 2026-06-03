@@ -18,7 +18,7 @@ class TeamDetailPage extends ConsumerWidget {
     if (team == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Team')),
-        body: const Center(child: Text('Team not found')),
+        body: const Center(child: Text('球队信息未找到')),
       );
     }
 
@@ -27,14 +27,14 @@ class TeamDetailPage extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Center(child: TeamBadge(flagUrl: team.flagUrl, size: 96)),
+          Center(child: TeamBadge(iso2: team.iso2, flagUrl: team.flagUrl, size: 96)),
           const SizedBox(height: 12),
-          _infoRow('FIFA Code', team.fifaCode),
-          _infoRow('ISO', team.iso2.toUpperCase()),
+          _infoRow('FIFA代码', team.fifaCode),
+          _infoRow('国家代码', team.iso2.toUpperCase()),
           if (team.groups.isNotEmpty)
-            _infoRow('Groups', team.groups.join(', ')),
+            _infoRow('所在小组', team.groups.join(', ')),
           const Divider(height: 32),
-          Text('Matches',
+          Text('比赛记录',
               style: Theme.of(context)
                   .textTheme
                   .titleSmall
@@ -50,7 +50,7 @@ class TeamDetailPage extends ConsumerWidget {
               if (myMatches.isEmpty) {
                 return const Padding(
                   padding: EdgeInsets.all(8),
-                  child: Text('No matches scheduled'),
+                  child: Text('尚无赛程安排'),
                 );
               }
               return Column(
