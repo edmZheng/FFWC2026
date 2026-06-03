@@ -1,12 +1,13 @@
 {
   "id": "ui-cn-flags",
   "title": "UI美化 + 全中文本地化 + 所有国家国旗",
-  "status": "in_progress",
+  "status": "completed",
   "strategy": "full-collaborate",
-  "currentPhase": "4-implementation",
-  "nextAction": "Layer1: theme + flag + match_time 并行",
+  "currentPhase": "done",
+  "nextAction": "已在 commit 21ed5ed (feat-ui-cn-flags) 中落地",
   "gate": null,
   "branch": "main",
   "scope": "lib/**/*.dart",
-  "createdAt": "2026-06-03T22:00:00+08:00"
+  "createdAt": "2026-06-03T22:00:00+08:00",
+  "closedAt": "2026-06-04T00:00:00+08:00"
 }

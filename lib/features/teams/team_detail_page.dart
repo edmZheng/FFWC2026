@@ -172,7 +172,7 @@ class _SquadGrid extends StatelessWidget {
                       ),
                 ),
                 Text(
-                  p.nameEn,
+                  p.displayName,
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,

@@ -5,6 +5,7 @@ class Player {
   const Player({
     required this.number,
     required this.nameEn,
+    required this.nameZh,
     required this.position,
     required this.positionZh,
     required this.captain,
@@ -13,14 +14,19 @@ class Player {
 
   final int number;
   final String nameEn;
+  final String nameZh;
   final String position;
   final String positionZh;
   final bool captain;
   final String photoUrl;
 
+  /// 显示名：优先中文，回退英文。
+  String get displayName => nameZh.isNotEmpty ? nameZh : nameEn;
+
   factory Player.fromJson(Map<String, dynamic> j) => Player(
         number: Coerce.asInt(j['number']),
         nameEn: Coerce.asString(j['name_en']),
+        nameZh: Coerce.asString(j['name_zh']),
         position: Coerce.asString(j['position']),
         positionZh: Coerce.asString(j['position_zh']),
         captain: Coerce.asBool(j['captain']),

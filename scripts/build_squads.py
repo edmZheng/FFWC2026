@@ -145,21 +145,23 @@ def parse_squads(text: str) -> dict[str, list[dict]]:
     return squads
 
 
-def load_existing_photo_urls() -> dict[str, str]:
-    """保留 squads.json 里已有肖像，避免重复跑脚本时被覆盖丢失。"""
+def load_existing_meta() -> dict[str, dict]:
+    """保留 squads.json 里已有的 photo_url 和 name_zh，避免重跑脚本时丢失。"""
     if not OUT_JSON.exists():
         return {}
     try:
         data = json.loads(OUT_JSON.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
         return {}
-    urls: dict[str, str] = {}
+    out: dict[str, dict] = {}
     for ps in data.get("squads", {}).values():
         for p in ps:
+            key = p["name_en"].strip().lower()
             url = (p.get("photo_url") or "").strip()
-            if url:
-                urls[p["name_en"].strip().lower()] = url
-    return urls
+            zh = (p.get("name_zh") or "").strip()
+            if url or zh:
+                out[key] = {"photo_url": url, "name_zh": zh}
+    return out
 
 
 def main() -> None:
@@ -168,10 +170,12 @@ def main() -> None:
 
     text = WIKI_MD.read_text(encoding="utf-8")
     squads = parse_squads(text)
-    preserved = load_existing_photo_urls()
-    photo_cache: dict[str, str | None] = dict(preserved)
+    preserved = load_existing_meta()
+    photo_cache: dict[str, str | None] = {
+        k: v["photo_url"] for k, v in preserved.items() if v["photo_url"]
+    }
     if preserved:
-        print(f"preserved {len(preserved)} existing photo_url(s)", flush=True)
+        print(f"preserved {len(preserved)} existing meta record(s)", flush=True)
     total = sum(len(v) for v in squads.values())
     done = 0
 
@@ -179,11 +183,16 @@ def main() -> None:
         for p in players:
             done += 1
             key = p["name_en"].strip().lower()
-            if key in photo_cache and photo_cache[key]:
-                p["photo_url"] = photo_cache[key]
+            prev = preserved.get(key, {})
+            if prev.get("photo_url"):
+                p["photo_url"] = prev["photo_url"]
             else:
                 photo = wiki_photo(p["name_en"], photo_cache)
                 p["photo_url"] = photo or ""
+            if prev.get("name_zh"):
+                p["name_zh"] = prev["name_zh"]
+            else:
+                p["name_zh"] = ""
             if done % 20 == 0:
                 print(f"photos {done}/{total}...", flush=True)
 
