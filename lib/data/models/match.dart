@@ -90,6 +90,13 @@ class Match {
   final Team? awayTeam;
   final Stadium? stadium;
 
+  /// 双方球队均已确定（非占位 id）。
+  bool get isConfirmed =>
+      homeTeamId != '0' &&
+      awayTeamId != '0' &&
+      homeTeamId.isNotEmpty &&
+      awayTeamId.isNotEmpty;
+
   /// Display name: real team name when known, fallback to label for TBD.
   String get homeDisplayName =>
       homeTeamId != '0' && homeTeamNameEn.isNotEmpty

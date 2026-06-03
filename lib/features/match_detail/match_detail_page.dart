@@ -3,8 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/l10n/zh_cn.dart';
 import '../../core/utils/match_time.dart';
+import '../../data/models/match.dart';
 import '../../providers.dart';
+import '../../shared/widgets/detail_scaffold.dart';
 import '../../shared/widgets/score_pill.dart';
 import '../../shared/widgets/status_chip.dart';
 import '../../shared/widgets/team_badge.dart';
@@ -46,13 +49,12 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
     final match = ref.watch(matchByIdProvider(widget.matchId));
 
     if (match == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Match')),
-        body: const Center(child: Text('比赛信息未找到')),
+      return const DetailScaffold(
+        title: Text('比赛'),
+        body: Center(child: Text('比赛信息未找到')),
       );
     }
 
-    // Re-evaluate polling when status changes
     if (match.status == MatchStatus.live && _timer == null) {
       _startPollingIfLive();
     } else if (match.status != MatchStatus.live) {
@@ -62,76 +64,131 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
 
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
+    final homeName = ZhCn.matchHomeName(match);
+    final awayName = ZhCn.matchAwayName(match);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(MatchTime.chineseStage(match.stage.label)),
-        actions: [StatusChip(match: match), const SizedBox(width: 12)],
-      ),
+    return DetailScaffold(
+      title: Text(MatchTime.chineseStage(match.stage.label)),
+      actions: [StatusChip(match: match), const SizedBox(width: 12)],
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Score header
           Card(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              child: Column(
                 children: [
-                  Expanded(child: _teamCol(context, match.homeDisplayName,
-                      match.homeTeam?.flagUrl ?? '')),
-                  ScorePill(
-                    match: match,
-                    style: tt.headlineMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                  if (match.stage == MatchStage.group && match.group.isNotEmpty)
+                    Text(
+                      '${match.group}组 · 第${match.matchday}轮',
+                      style: tt.titleSmall?.copyWith(color: cs.primary),
+                    )
+                  else
+                    Text(
+                      MatchTime.chineseStage(match.stage.label),
+                      style: tt.titleSmall?.copyWith(color: cs.primary),
+                    ),
+                  if (match.localDate != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      MatchTime.formatChineseDateTime(match.localDate!),
+                      style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Expanded(
+                        child: _teamCol(
+                          context,
+                          homeName,
+                          match.homeTeam?.iso2 ?? '',
+                          match.homeTeam?.fifaCode ?? '',
+                          match.homeTeam?.flagUrl ?? '',
+                        ),
+                      ),
+                      ScorePill(
+                        match: match,
+                        style: tt.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Expanded(
+                        child: _teamCol(
+                          context,
+                          awayName,
+                          match.awayTeam?.iso2 ?? '',
+                          match.awayTeam?.fifaCode ?? '',
+                          match.awayTeam?.flagUrl ?? '',
+                        ),
+                      ),
+                    ],
                   ),
-                  Expanded(child: _teamCol(context, match.awayDisplayName,
-                      match.awayTeam?.flagUrl ?? '')),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 16),
-
-          // Match info
           _section(context, '赛事信息', [
             if (match.stadium != null)
-              _infoRow(context, Icons.stadium, match.stadium!.nameEn,
-                  subtitle: '${match.stadium!.cityEn}, ${match.stadium!.countryEn}'),
+              _infoRow(
+                context,
+                Icons.stadium,
+                ZhCn.stadiumName(match.stadium!),
+                subtitle:
+                    '${ZhCn.city(match.stadium!)} · ${ZhCn.country(match.stadium!)}',
+              ),
             if (match.localDate != null)
-              _infoRow(context, Icons.schedule,
-                  _formatDate(match.localDate!)),
+              _infoRow(
+                context,
+                Icons.schedule,
+                MatchTime.formatChineseDateTime(match.localDate!),
+              ),
             if (match.group.isNotEmpty)
-              _infoRow(context, Icons.group,
-                  '小组 ${match.group} · 第${match.matchday}轮'),
+              _infoRow(
+                context,
+                Icons.group,
+                '${match.group} 组 · 第${match.matchday}轮',
+              ),
             if (match.timeElapsed.isNotEmpty &&
                 match.timeElapsed.toLowerCase() != 'notstarted')
-              _infoRow(context, Icons.timer,
-                  MatchTime.chineseStatus(match.status, match.timeElapsed)),
+              _infoRow(
+                context,
+                Icons.timer,
+                MatchTime.chineseStatus(match.status, match.timeElapsed),
+              ),
           ]),
-
-          // Scorers
           if (match.homeScorers.isNotEmpty || match.awayScorers.isNotEmpty)
             _section(context, '进球', [
-              ..._scorerRows(context, match.homeDisplayName, match.homeScorers, cs),
-              ..._scorerRows(context, match.awayDisplayName, match.awayScorers, cs),
+              ..._scorerRows(context, homeName, match.homeScorers),
+              ..._scorerRows(context, awayName, match.awayScorers),
             ]),
         ],
       ),
     );
   }
 
-  Widget _teamCol(BuildContext ctx, String name, String flag) => Column(
+  Widget _teamCol(
+    BuildContext ctx,
+    String name,
+    String iso2,
+    String fifaCode,
+    String flagUrl,
+  ) =>
+      Column(
         children: [
-          TeamBadge(flagUrl: flag, size: 56),
+          TeamBadge(iso2: iso2, fifaCode: fifaCode, flagUrl: flagUrl, size: 56),
           const SizedBox(height: 8),
-          Text(name,
-              textAlign: TextAlign.center,
-              style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis),
+          Text(
+            name,
+            textAlign: TextAlign.center,
+            style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       );
 
@@ -140,11 +197,12 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title,
-            style: Theme.of(ctx)
-                .textTheme
-                .titleSmall
-                ?.copyWith(fontWeight: FontWeight.bold)),
+        Text(
+          title,
+          style: Theme.of(ctx).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
         const SizedBox(height: 8),
         ...children,
         const SizedBox(height: 16),
@@ -152,8 +210,12 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
     );
   }
 
-  Widget _infoRow(BuildContext ctx, IconData icon, String text,
-      {String? subtitle}) =>
+  Widget _infoRow(
+    BuildContext ctx,
+    IconData icon,
+    String text, {
+    String? subtitle,
+  }) =>
       ListTile(
         dense: true,
         leading: Icon(icon, size: 20),
@@ -162,30 +224,23 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
       );
 
   List<Widget> _scorerRows(
-      BuildContext ctx, String teamName, List<String> scorers, ColorScheme cs) {
+    BuildContext ctx,
+    String teamName,
+    List<String> scorers,
+  ) {
     if (scorers.isEmpty) return [];
     return [
       Padding(
         padding: const EdgeInsets.only(left: 4, top: 4, bottom: 2),
-        child: Text(teamName,
-            style: const TextStyle(fontWeight: FontWeight.w600)),
+        child: Text(teamName, style: const TextStyle(fontWeight: FontWeight.w600)),
       ),
-      ...scorers.map((s) => ListTile(
-            dense: true,
-            leading: const Icon(Icons.sports_soccer, size: 18),
-            title: Text(s),
-          )),
+      ...scorers.map(
+        (s) => ListTile(
+          dense: true,
+          leading: const Icon(Icons.sports_soccer, size: 18),
+          title: Text(s),
+        ),
+      ),
     ];
-  }
-
-  String _formatDate(DateTime dt) {
-    final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    final m = months[dt.month - 1];
-    final h = dt.hour.toString().padLeft(2, '0');
-    final min = dt.minute.toString().padLeft(2, '0');
-    return '$m ${dt.day}, ${dt.year}  $h:$min';
   }
 }

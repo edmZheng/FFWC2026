@@ -5,9 +5,16 @@ import '../../data/models/match.dart';
 
 /// Small chip showing match status: 进行中 / 完场 / 日期时间.
 class StatusChip extends StatelessWidget {
-  const StatusChip({super.key, required this.match});
+  const StatusChip({
+    super.key,
+    required this.match,
+    this.showTime = true,
+  });
 
   final Match match;
+
+  /// 未开赛时是否在芯片内显示时间（赛程卡片已在 VS 下方展示）。
+  final bool showTime;
 
   @override
   Widget build(BuildContext context) {
@@ -20,21 +27,17 @@ class StatusChip extends StatelessWidget {
           bg: cs.secondaryContainer,
           fg: cs.onSecondaryContainer,
         ),
-      MatchStatus.notStarted => _chip(
-          context,
-          label: match.localDate != null ? _fmt(match.localDate!) : '待定',
-          bg: cs.surfaceContainerHighest,
-          fg: cs.onSurface,
-        ),
+      MatchStatus.notStarted => showTime
+          ? _chip(
+              context,
+              label: match.localDate != null
+                  ? MatchTime.formatChineseDateTime(match.localDate!)
+                  : '待定',
+              bg: cs.surfaceContainerHighest,
+              fg: cs.onSurface,
+            )
+          : const SizedBox.shrink(),
     };
-  }
-
-  String _fmt(DateTime dt) {
-    final m = dt.month.toString().padLeft(2, '0');
-    final d = dt.day.toString().padLeft(2, '0');
-    final h = dt.hour.toString().padLeft(2, '0');
-    final min = dt.minute.toString().padLeft(2, '0');
-    return '$m/$d $h:$min';
   }
 
   Widget _liveChip(BuildContext context, ColorScheme cs) => Container(

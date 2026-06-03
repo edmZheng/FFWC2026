@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/l10n/zh_cn.dart';
 import '../../providers.dart';
 import '../../shared/widgets/team_badge.dart';
 
@@ -27,28 +28,36 @@ class TeamsPage extends ConsumerWidget {
           itemCount: teams.length,
           itemBuilder: (_, i) {
             final t = teams[i];
+            final name = ZhCn.teamName(t);
             return InkWell(
-              onTap: () => context.go('/team/${t.id}'),
+              onTap: () => context.push('/team/${t.id}'),
               borderRadius: BorderRadius.circular(12),
               child: Card(
                 margin: EdgeInsets.zero,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    TeamBadge(iso2: t.iso2, flagUrl: t.flagUrl, size: 48),
+                    TeamBadge(
+                      iso2: t.iso2,
+                      fifaCode: t.fifaCode,
+                      flagUrl: t.flagUrl,
+                      size: 48,
+                    ),
                     const SizedBox(height: 8),
                     Text(
-                      t.nameEn,
+                      name,
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.labelMedium,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     if (t.fifaCode.isNotEmpty)
-                      Text(t.fifaCode,
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: Theme.of(context).colorScheme.outline,
-                              )),
+                      Text(
+                        t.fifaCode,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: Theme.of(context).colorScheme.outline,
+                            ),
+                      ),
                   ],
                 ),
               ),

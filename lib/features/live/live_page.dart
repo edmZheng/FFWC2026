@@ -50,7 +50,7 @@ class LivePage extends ConsumerWidget {
             itemCount: matches.length,
             itemBuilder: (_, i) => MatchTile(
               match: matches[i],
-              onTap: () => context.go('/match/${matches[i].id}'),
+              onTap: () => context.push('/match/${matches[i].id}'),
             ),
           );
         },

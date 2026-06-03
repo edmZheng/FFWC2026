@@ -35,13 +35,15 @@ class MatchTime {
     return MatchStatus.live;
   }
 
+  /// 中文开赛时间：6月11日 13:00
+  static String formatChineseDateTime(DateTime dt) =>
+      '${dt.month}月${dt.day}日 ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+
   /// Formats a [DateTime] for display: "Jun 11, 2026 13:00".
-  static String formatDisplay(DateTime dt) =>
-      DateFormat('MMM d, yyyy HH:mm').format(dt);
+  static String formatDisplay(DateTime dt) => formatChineseDateTime(dt);
 
   /// Formats a [DateTime] to a short date: "Jun 11".
-  static String formatShortDate(DateTime dt) =>
-      DateFormat('MMM d').format(dt);
+  static String formatShortDate(DateTime dt) => '${dt.month}月${dt.day}日';
 
   /// 中文状态标签
   static String chineseStatus(MatchStatus status, String timeElapsed) {

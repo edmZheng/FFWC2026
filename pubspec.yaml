@@ -29,3 +29,5 @@ flutter:
     - assets/data/teams.json
     - assets/data/stadiums.json
     - assets/data/groups.json
+    - assets/data/squads.json
+    - assets/stadiums/

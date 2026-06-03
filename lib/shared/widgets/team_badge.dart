@@ -1,51 +1,90 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
-/// Displays a team's flag from flagcdn with a fallback placeholder.
-///
-/// Prefers [iso2] to build a PNG URL (flagcdn returns SVG by default, which
-/// CachedNetworkImage cannot render). Falls back to [flagUrl] when [iso2] is
-/// empty, and to a placeholder when neither is available.
-class TeamBadge extends StatelessWidget {
+import '../../core/utils/flag_url.dart';
+
+/// 球队国旗：多 CDN 回退；release 包需 Android INTERNET 权限。
+class TeamBadge extends StatefulWidget {
   const TeamBadge({
     super.key,
     this.flagUrl = '',
     this.iso2 = '',
+    this.fifaCode = '',
     this.size = 32,
   });
 
   final String flagUrl;
   final String iso2;
+  final String fifaCode;
   final double size;
 
-  String? get _imageUrl {
-    if (iso2.trim().isNotEmpty) {
-      return 'https://flagcdn.com/w80/${iso2.trim().toLowerCase()}.png';
+  @override
+  State<TeamBadge> createState() => _TeamBadgeState();
+}
+
+class _TeamBadgeState extends State<TeamBadge> {
+  late List<String> _candidates;
+  int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _candidates = FlagUrl.pngCandidates(
+      iso2: widget.iso2,
+      fifaCode: widget.fifaCode,
+      flagUrl: widget.flagUrl,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant TeamBadge oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.iso2 != widget.iso2 ||
+        oldWidget.fifaCode != widget.fifaCode ||
+        oldWidget.flagUrl != widget.flagUrl) {
+      _candidates = FlagUrl.pngCandidates(
+        iso2: widget.iso2,
+        fifaCode: widget.fifaCode,
+        flagUrl: widget.flagUrl,
+      );
+      _index = 0;
     }
-    if (flagUrl.trim().isNotEmpty) return flagUrl.trim();
-    return null;
+  }
+
+  void _tryNextUrl() {
+    if (_index + 1 < _candidates.length) {
+      setState(() => _index++);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final url = _imageUrl;
-    if (url == null) {
-      return _placeholder();
+    if (_candidates.isEmpty || _index >= _candidates.length) {
+      return _placeholder(widget.size);
     }
+
+    final url = _candidates[_index];
     return ClipRRect(
       borderRadius: BorderRadius.circular(4),
       child: CachedNetworkImage(
+        key: ValueKey(url),
         imageUrl: url,
-        width: size,
-        height: size * 0.67,
+        width: widget.size,
+        height: widget.size * 0.67,
         fit: BoxFit.cover,
-        placeholder: (_, __) => _placeholder(),
-        errorWidget: (_, __, ___) => _placeholder(),
+        fadeInDuration: const Duration(milliseconds: 120),
+        placeholder: (_, __) => _placeholder(widget.size),
+        errorWidget: (_, __, ___) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _tryNextUrl();
+          });
+          return _placeholder(widget.size);
+        },
       ),
     );
   }
 
-  Widget _placeholder() => Container(
+  static Widget _placeholder(double size) => Container(
         width: size,
         height: size * 0.67,
         decoration: BoxDecoration(

@@ -8,7 +8,9 @@ import 'core/cache/cache_store.dart';
 import 'data/models/group_standing.dart';
 import 'data/models/match.dart';
 import 'data/models/stadium.dart';
+import 'data/models/player.dart';
 import 'data/models/team.dart';
+import 'data/repositories/squad_repository.dart';
 import 'data/repositories/worldcup_repository.dart';
 
 // ─── Infrastructure ──────────────────────────────────────────────────────────
@@ -128,4 +130,15 @@ final teamByIdProvider = Provider.family<Team?, String>((ref, id) {
       .whenData((ts) => ts.where((t) => t.id == id).firstOrNull)
       .valueOrNull
       .flatMap((t) => t);
+});
+
+// ─── Squads (bundled asset) ───────────────────────────────────────────────────
+
+final squadRepositoryProvider = Provider<SquadRepository>(
+  (_) => SquadRepository.instance,
+);
+
+final squadByTeamIdProvider =
+    FutureProvider.family<List<Player>, String>((ref, teamId) async {
+  return ref.watch(squadRepositoryProvider).forTeam(teamId);
 });

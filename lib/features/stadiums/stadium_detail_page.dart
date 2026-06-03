@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/l10n/zh_cn.dart';
 import '../../providers.dart';
+import '../../shared/widgets/detail_scaffold.dart';
 import '../../shared/widgets/match_tile.dart';
+import '../../shared/widgets/stadium_cover.dart';
 
 class StadiumDetailPage extends ConsumerWidget {
   const StadiumDetailPage({super.key, required this.stadiumId});
@@ -15,58 +18,80 @@ class StadiumDetailPage extends ConsumerWidget {
     final matchesAsync = ref.watch(matchesProvider);
 
     return stadiumAsync.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (e, _) => Scaffold(body: Center(child: Text(e.toString()))),
+      loading: () => const DetailScaffold(
+        title: Text('场馆'),
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => DetailScaffold(
+        title: const Text('场馆'),
+        body: Center(child: Text(e.toString())),
+      ),
       data: (stadiums) {
         final stadium = stadiums.where((s) => s.id == stadiumId).firstOrNull;
         if (stadium == null) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('Stadium')),
-            body: const Center(child: Text('场馆信息未找到')),
+          return const DetailScaffold(
+            title: Text('场馆'),
+            body: Center(child: Text('场馆信息未找到')),
           );
         }
-        return Scaffold(
-          appBar: AppBar(title: Text(stadium.nameEn)),
+
+        final name = ZhCn.stadiumName(stadium);
+        final city = ZhCn.city(stadium);
+        final country = ZhCn.country(stadium);
+
+        return DetailScaffold(
+          title: Text(name),
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              const Icon(Icons.stadium, size: 64),
-              const SizedBox(height: 12),
-              _infoRow('FIFA名称', stadium.fifaName),
-              _infoRow('所在城市', stadium.cityEn),
-              _infoRow('国家/地区', stadium.countryEn),
-              _infoRow('赛区', stadium.region),
+              AspectRatio(
+                aspectRatio: 16 / 9,
+                child: StadiumCover(
+                  stadiumId: stadium.id,
+                  borderRadius: BorderRadius.circular(12),
+                  placeholderIconSize: 72,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _infoRow('FIFA 名称', stadium.fifaName),
+              _infoRow('所在城市', city),
+              _infoRow('国家/地区', country),
+              _infoRow('赛区', ZhCn.region(stadium.region)),
               _infoRow(
-                  '场馆容量',
-                  stadium.capacity > 0
-                      ? '可容纳 ${stadium.capacity.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+$)'), (m) => '${m[1]},')} 名观众'
-                      : '容量未知'),
+                '场馆容量',
+                stadium.capacity > 0
+                    ? '可容纳 ${stadium.capacity.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+$)'), (m) => '${m[1]},')} 名观众'
+                    : '容量未知',
+              ),
               const Divider(height: 32),
-              Text('将在此投入使用的赛场',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleSmall
-                      ?.copyWith(fontWeight: FontWeight.bold)),
+              Text(
+                '将在此投入使用的赛场',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
               matchesAsync.when(
                 loading: () =>
                     const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Text(e.toString()),
                 data: (matches) {
                   final venueMatches = matches
-                      .where((m) => m.stadiumId == stadiumId)
+                      .where((m) => m.isConfirmed && m.stadiumId == stadiumId)
                       .toList();
                   if (venueMatches.isEmpty) {
                     return const Padding(
                       padding: EdgeInsets.all(8),
-                      child: Text('暂无赛事安排'),
+                      child: Text('暂无已确定的赛事安排'),
                     );
                   }
                   return Column(
                     children: venueMatches
-                        .map((m) => MatchTile(
-                              match: m,
-                              onTap: () => context.go('/match/${m.id}'),
-                            ))
+                        .map(
+                          (m) => MatchTile(
+                            match: m,
+                            onTap: () => context.push('/match/${m.id}'),
+                          ),
+                        )
                         .toList(),
                   );
                 },
@@ -84,9 +109,12 @@ class StadiumDetailPage extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-                width: 100,
-                child: Text(label,
-                    style: const TextStyle(fontWeight: FontWeight.w600))),
+              width: 100,
+              child: Text(
+                label,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
             Expanded(child: Text(value)),
           ],
         ),

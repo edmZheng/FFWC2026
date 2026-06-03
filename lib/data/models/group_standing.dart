@@ -14,6 +14,8 @@ class TeamStanding {
     required this.gd,
     this.teamNameEn = '',
     this.teamFlagUrl = '',
+    this.teamIso2 = '',
+    this.teamFifaCode = '',
   });
 
   final String teamId;
@@ -28,6 +30,8 @@ class TeamStanding {
   /// Enriched after join with teams list.
   final String teamNameEn;
   final String teamFlagUrl;
+  final String teamIso2;
+  final String teamFifaCode;
 
   factory TeamStanding.fromJson(Map<String, dynamic> j) => TeamStanding(
         teamId: Coerce.asString(j['team_id']),
@@ -41,7 +45,12 @@ class TeamStanding {
         gd: Coerce.asInt(j['gd']),
       );
 
-  TeamStanding copyWithTeam({required String nameEn, required String flagUrl}) =>
+  TeamStanding copyWithTeam({
+    required String nameEn,
+    required String flagUrl,
+    String iso2 = '',
+    String fifaCode = '',
+  }) =>
       TeamStanding(
         teamId: teamId,
         mp: mp,
@@ -54,6 +63,8 @@ class TeamStanding {
         gd: gd,
         teamNameEn: nameEn,
         teamFlagUrl: flagUrl,
+        teamIso2: iso2,
+        teamFifaCode: fifaCode,
       );
 }
 
@@ -82,6 +93,8 @@ class GroupStanding {
       return s.copyWithTeam(
         nameEn: t['name_en']?.toString() ?? '',
         flagUrl: t['flag']?.toString() ?? '',
+        iso2: t['iso2']?.toString() ?? '',
+        fifaCode: t['fifa_code']?.toString() ?? '',
       );
     }).toList();
 

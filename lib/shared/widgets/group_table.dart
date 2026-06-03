@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 
+import '../../core/l10n/zh_cn.dart';
 import '../../data/models/group_standing.dart';
 import 'team_badge.dart';
 
-/// Full standings table for a single group.
+/// 单组积分榜表格。
 class GroupTable extends StatelessWidget {
-  const GroupTable({super.key, required this.standing});
+  const GroupTable({
+    super.key,
+    required this.standing,
+    this.showTitle = true,
+  });
 
   final GroupStanding standing;
+  final bool showTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -17,12 +23,17 @@ class GroupTable extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-          child: Text('小组 ${standing.groupName}',
+        if (showTitle)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+            child: Text(
+              '${standing.groupName} 组',
               style: tt.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold, color: cs.primary)),
-        ),
+                fontWeight: FontWeight.bold,
+                color: cs.primary,
+              ),
+            ),
+          ),
         Table(
           columnWidths: const {
             0: FixedColumnWidth(24),
@@ -37,8 +48,9 @@ class GroupTable extends StatelessWidget {
           },
           children: [
             _header(cs, tt),
-            ...standing.teams.asMap().entries.map((e) =>
-                _row(context, e.key + 1, e.value, cs, tt)),
+            ...standing.teams.asMap().entries.map(
+                  (e) => _row(context, e.key + 1, e.value, cs, tt),
+                ),
           ],
         ),
       ],
@@ -54,15 +66,27 @@ class GroupTable extends StatelessWidget {
 
   Widget _hCell(String text, TextTheme tt, ColorScheme cs) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-        child: Text(text,
-            textAlign: TextAlign.center,
-            style: tt.labelSmall?.copyWith(
-                fontWeight: FontWeight.bold, color: cs.primary)),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: tt.labelSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: cs.primary,
+          ),
+        ),
       );
 
-  TableRow _row(BuildContext ctx, int pos, TeamStanding s,
-      ColorScheme cs, TextTheme tt) {
-    final qualifies = pos <= 2; // top 2 advance from group
+  TableRow _row(
+    BuildContext ctx,
+    int pos,
+    TeamStanding s,
+    ColorScheme cs,
+    TextTheme tt,
+  ) {
+    final qualifies = pos <= 2;
+    final name = s.teamNameEn.isNotEmpty
+        ? ZhCn.teamNameEn(s.teamNameEn)
+        : s.teamId;
     return TableRow(
       decoration: BoxDecoration(
         color: qualifies
@@ -75,12 +99,19 @@ class GroupTable extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: Row(
             children: [
-              TeamBadge(flagUrl: s.teamFlagUrl, iso2: '', size: 18),
+              TeamBadge(
+                iso2: s.teamIso2,
+                fifaCode: s.teamFifaCode,
+                flagUrl: s.teamFlagUrl,
+                size: 18,
+              ),
               const SizedBox(width: 4),
               Expanded(
-                child: Text(s.teamNameEn.isNotEmpty ? s.teamNameEn : s.teamId,
-                    style: tt.labelSmall?.copyWith(color: Colors.white),
-                    overflow: TextOverflow.ellipsis),
+                child: Text(
+                  name,
+                  style: tt.labelSmall?.copyWith(color: Colors.white),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
@@ -91,17 +122,24 @@ class GroupTable extends StatelessWidget {
         _cell('${s.l}', tt),
         _cell('${s.gd >= 0 ? '+' : ''}${s.gd}', tt),
         _cell('${s.gf}', tt),
-        _cell('${s.pts}', tt,
-            style: tt.labelSmall
-                ?.copyWith(fontWeight: FontWeight.bold, color: Colors.white)),
+        _cell(
+          '${s.pts}',
+          tt,
+          style: tt.labelSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
       ],
     );
   }
 
   Widget _cell(String text, TextTheme tt, {TextStyle? style}) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-        child: Text(text,
-            textAlign: TextAlign.center,
-            style: style ?? tt.labelSmall?.copyWith(color: Colors.white)),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: style ?? tt.labelSmall?.copyWith(color: Colors.white),
+        ),
       );
 }

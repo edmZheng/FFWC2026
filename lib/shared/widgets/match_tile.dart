@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../core/l10n/zh_cn.dart';
 import '../../core/utils/match_time.dart';
 import '../../data/models/match.dart';
 import 'score_pill.dart';
 import 'status_chip.dart';
 import 'team_badge.dart';
 
-/// Match row used in schedule and live lists, themed for the FIFA World Cup UI.
+/// 赛程卡片：轮次在 VS 上方，开赛时间在 VS 下方。
 class MatchTile extends StatelessWidget {
   const MatchTile({
     super.key,
@@ -39,52 +40,73 @@ class MatchTile extends StatelessWidget {
         child: Stack(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               child: Column(
                 children: [
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Expanded(
                         child: _teamCell(
                           context,
-                          match.homeDisplayName,
+                          ZhCn.matchHomeName(match),
                           match.homeTeam?.iso2 ?? '',
+                          match.homeTeam?.fifaCode ?? '',
                           match.homeTeam?.flagUrl ?? '',
-                          TextAlign.left,
+                          TextAlign.center,
                         ),
                       ),
                       SizedBox(
-                        width: 80,
-                        child: Center(child: ScorePill(match: match)),
+                        width: 108,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _roundLabel(),
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    color: cs.primary,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 15,
+                                  ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 6),
+                            ScorePill(match: match),
+                            const SizedBox(height: 6),
+                            Text(
+                              match.localDate != null
+                                  ? MatchTime.formatChineseDateTime(match.localDate!)
+                                  : '时间待定',
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                            ),
+                          ],
+                        ),
                       ),
                       Expanded(
                         child: _teamCell(
                           context,
-                          match.awayDisplayName,
+                          ZhCn.matchAwayName(match),
                           match.awayTeam?.iso2 ?? '',
+                          match.awayTeam?.fifaCode ?? '',
                           match.awayTeam?.flagUrl ?? '',
-                          TextAlign.right,
+                          TextAlign.center,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          _stageLabel(),
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: cs.outline,
-                              ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      StatusChip(match: match),
-                    ],
-                  ),
+                  if (match.status != MatchStatus.notStarted) ...[
+                    const SizedBox(height: 10),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: StatusChip(match: match, showTime: false),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -111,36 +133,33 @@ class MatchTile extends StatelessWidget {
     BuildContext ctx,
     String name,
     String iso2,
+    String fifaCode,
     String flagUrl,
     TextAlign align,
   ) {
-    final badge = TeamBadge(iso2: iso2, flagUrl: flagUrl, size: 36);
-    final label = Expanded(
-      child: Text(
-        name,
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TeamBadge(iso2: iso2, fifaCode: fifaCode, flagUrl: flagUrl, size: 40),
+        const SizedBox(height: 8),
+        Text(
+          name,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+          textAlign: align,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
-        textAlign: align,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
-    final children = align == TextAlign.left
-        ? [badge, const SizedBox(width: 8), label]
-        : [label, const SizedBox(width: 8), badge];
-    return Row(
-      mainAxisAlignment:
-          align == TextAlign.left ? MainAxisAlignment.start : MainAxisAlignment.end,
-      children: children,
+      ],
     );
   }
 
-  String _stageLabel() {
+  String _roundLabel() {
     if (match.stage == MatchStage.group && match.group.isNotEmpty) {
-      return '小组${match.group} · 第${match.matchday}轮';
+      return '${match.group}组 · 第${match.matchday}轮';
     }
     return MatchTime.chineseStage(match.stage.label);
   }

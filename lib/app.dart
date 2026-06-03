@@ -7,6 +7,7 @@ import 'features/match_detail/match_detail_page.dart';
 import 'features/schedule/schedule_page.dart';
 import 'features/stadiums/stadium_detail_page.dart';
 import 'features/stadiums/stadiums_page.dart';
+import 'features/standings/group_detail_page.dart';
 import 'features/standings/standings_page.dart';
 import 'features/teams/team_detail_page.dart';
 import 'features/teams/teams_page.dart';
@@ -65,6 +66,12 @@ final router = GoRouter(
       parentNavigatorKey: _rootNavKey,
       builder: (_, state) =>
           StadiumDetailPage(stadiumId: state.pathParameters['id']!),
+    ),
+    GoRoute(
+      path: '/group/:name',
+      parentNavigatorKey: _rootNavKey,
+      builder: (_, state) =>
+          GroupDetailPage(groupName: state.pathParameters['name']!),
     ),
   ],
 );
