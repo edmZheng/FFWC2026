@@ -1,0 +1,31 @@
+name: worldcup_tracker
+description: 2026 FIFA World Cup schedule tracker app.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.6.1
+  dio: ^5.7.0
+  go_router: ^14.6.2
+  shared_preferences: ^2.3.2
+  cached_network_image: ^3.4.1
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  mocktail: ^1.0.4
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/data/games.json
+    - assets/data/teams.json
+    - assets/data/stadiums.json
+    - assets/data/groups.json
