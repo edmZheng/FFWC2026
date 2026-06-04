@@ -96,6 +96,7 @@ python generate_launcher_icons.py  # 从 assets/icon/app_icon.png 生成 Android
 - **分段标题**：用 `SectionTitle`，球队详情为「赛程」「出战名单」。
 - **Shell 底栏**：`CapsuleNavBar` 悬浮不占位；无点击涟漪；赛程滚过 ~120px 显示「回顶部」。Mono 炭蓝亮/暗双模 + `ThemeMode.system`（`mono_palette.dart` / `app_theme.dart`）。
 - **赛程子 Tab**：`关注 | 赛中/未赛 | 完赛`；**默认 `initialIndex: 1`**（赛中/未赛）。搜索见 `ScheduleSearchDelegate`。
+- **赛事日历**（内嵌，无独立路由）：AppBar 左上切换 `ScheduleDayStrip`（`features/schedule/schedule_day_strip.dart` + `core/utils/match_calendar.dart`）；`AnimatedSize` 下推三 Tab 列表；`scheduleCalendarDays` 范围（数据首尾比赛日并含用户当天）；展开默认今天；高亮与场次文案随当前子 Tab（**关注**=有关注球队比赛的日期，其它=有任意比赛）；点日按北京时间筛列表；再点收起恢复全量。**勿**新增 `/schedule/calendar` 全屏页。
 - **关注球队**：Toggle 走 `followedTeamsProvider`；prefs key `followed_team_ids`（勿与 `cache_*` 混用）。宫格列表用 `teamsGridProvider`（已关注置顶），勿直接用 `teamsProvider`。
 - **StatusChip 时间**：列表/详情 `showTime: false`；未开赛详情 AppBar 无 actions。开赛时间只在卡片正文与「赛事信息」。
 - **宫格 + 关注角标**：球队 Card 内容 `Positioned.fill` 居中，角标单独 `Positioned`，避免国旗偏移。

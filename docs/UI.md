@@ -26,6 +26,13 @@
 | 子 Tab | `关注` · `赛中 / 未赛` · `完赛`（`TabController` length 3） |
 | 默认子 Tab | `initialIndex: 1`（**赛中 / 未赛**），不是「关注」 |
 | 搜索 | AppBar 右上角 → `showSearch` + `ScheduleSearchDelegate`；按球队中文/英文名、FIFA 代码、名单球员名筛已确定赛程 |
+| 赛历入口 | AppBar **左上角** `calendar_month`（与右上搜索对称）；再点收起 |
+| 赛历条 | Tab 下方 `ScheduleDayStrip`（`schedule_day_strip.dart`），`AnimatedSize` 约 320ms 下推 `TabBarView` |
+| 日期范围 | `scheduleCalendarDays`：已确定比赛最早～最晚日，并强制包含用户当前日历日（无固定 6/11–7/19） |
+| 默认选中 | `defaultCalendarSelectedDay()` → 用户当前日 |
+| 高亮规则 | `highlightCountByDay`：子 Tab **关注** 用 `followedMatches` 计场，**赛中/未赛**与**完赛**用全部已确定比赛；切换 Tab 时 `setState` 刷新条 |
+| 列表筛选 | 展开且已选日期时，`filterMatchesByCalendarDay` 筛三 Tab（北京时间，优先 `match_id_map` UTC） |
+| 实现勿踩 | **无** `/schedule/calendar` 路由；逻辑在 `core/utils/match_calendar.dart` |
 | 关注 Tab | `followedMatchesProvider`：主客队任一方为已关注 `teamId` 的 `isConfirmed` 比赛，按开赛时间排序 |
 
 ## 球队关注

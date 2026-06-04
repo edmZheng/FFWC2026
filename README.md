@@ -4,7 +4,7 @@
 
 ## 功能
 
-- **赛程**：48 队 × 104 场；子 Tab **关注 / 赛中·未赛 / 完赛**（默认「赛中·未赛」）；右上角 **搜索**（球队名、球员名）；关注球队的赛程聚合在「关注」Tab；**开赛时间统一北京时间**（UTC+8）
+- **赛程**：48 队 × 104 场；子 Tab **关注 / 赛中·未赛 / 完赛**（默认「赛中·未赛」）；左上 **赛历**（展开横向日期条，`AnimatedSize` 下推列表，按北京时间筛当日；关注 Tab 高亮「有关注球队比赛」的日期）；右上 **搜索**（球队名、球员名）；**开赛时间统一北京时间**（UTC+8）
 - **积分榜**：12 个小组排名表
 - **球队**：**关注**（爱心，持久化本地）；宫格已关注置顶 + 角标；详情顶栏队徽 + 小组 / FIFA 排名；**赛程**、**出战名单**（26 人，中文名 + 队长标）
 - **首发名单**：单场比赛详情页展示双方首发 + 替补 + 阵型，赛前 30-60 分钟自动出现
@@ -68,7 +68,7 @@ lib/
 │   ├── constants/app_info.dart              # 显示名 FFWC2026
 │   ├── nav/schedule_scroll_nav.dart         # 赛程页 → 底栏「回顶部」状态
 │   ├── theme/                               # AppTheme + mono_palette（炭蓝双模）
-│   └── utils/                               # coerce, match_time, teams_grid_sort, flag_url
+│   └── utils/                               # coerce, match_time, match_calendar, teams_grid_sort, flag_url
 ├── data/
 │   ├── models/                              # Match / Team / Stadium / GroupStanding / Player / Lineup
 │   └── repositories/
@@ -79,7 +79,7 @@ lib/
 │       ├── followed_teams_store.dart        # 关注球队 id（SharedPreferences）
 │       └── lineup_repository.dart           # Worker → Highlightly /lineups
 ├── features/
-│   ├── schedule/                            # 赛程 + 搜索 + 关注 Tab
+│   ├── schedule/                            # 赛程 + 内嵌赛历条 + 搜索 + 关注 Tab
 │   └── …                                    # standings / teams / stadiums / match_detail
 └── shared/widgets/                          # MatchTile / CapsuleNavBar / EdgeProximityScale / TeamFollowButton 等
 
