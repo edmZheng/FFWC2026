@@ -49,6 +49,19 @@ class _SchedulePageState extends ConsumerState<SchedulePage>
     for (final c in _scrollControllers) {
       c.addListener(_publishScrollNav);
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncScrollNav());
+  }
+
+  @override
+  void activate() {
+    super.activate();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncScrollNav());
+  }
+
+  /// 根据当前滚动偏移同步底栏「回顶部」状态（切 tab 返回时 offset 可能已为 0 但未触发 listener）。
+  void _syncScrollNav() {
+    if (!mounted) return;
+    _publishScrollNav();
   }
 
   @override

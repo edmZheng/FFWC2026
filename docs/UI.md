@@ -35,7 +35,7 @@
 - **4 Tab**：赛程 / 积分榜 / 球队 / 场馆（无直播 Tab）
 - **底栏**：`CapsuleNavBar` 液态玻璃胶囊，悬浮于内容之上（`Stack`），不占底部横条
 - **点击**：`GestureDetector`，无涟漪/高亮，仅切换选中态（与下文全应用 `NoSplash` 一致）
-- **赛程回顶部**：赛程 Tab 列表滚过约 120px 后，第一个 Tab 变为圆圈 ↑ +「回顶部」；点击平滑滚回顶部（`scheduleScrollNavProvider` + `core/nav/schedule_scroll_nav.dart`）
+- **赛程回顶部**：列表滚过约 120px 后，赛程 Tab 显示 ↑ +「回顶部」；点击平滑滚顶（`scheduleScrollNavProvider`）。**离开赛程 Shell Tab** 时 `app.dart` 调用 `reset()`；回到赛程后 `SchedulePage` 在 `initState` / `activate` 首帧执行 `_syncScrollNav()`，避免列表已在顶部仍残留「回顶部」
 - 列表底部留白：`CapsuleNavMetrics.bottomInset(context)`，避免被胶囊遮挡
 
 ## 赛程页（`/schedule`）
@@ -74,15 +74,26 @@
 | 回退 | 本地缺失时用 `_networkById` 同 id 的 Wikimedia URL |
 | 换图 | 覆盖 `assets/stadiums/{id}.png` 后 **Release 打包**；id 须留在 `_pngIds`（当前 `1`–`16` 全覆盖） |
 
+## 场馆宫格（`/stadiums`）
+
+| 项 | 说明 |
+|---|---|
+| 布局 | `GridView` + `EdgeProximityScale`；`clipBehavior: Clip.none` |
+| 封面 | `StadiumCover`：本地 PNG（`stadium_photos.dart`）；插画底部常烧录英文球场名 |
+| 中文标题条 | `caption` 参数：封面底部实色条叠中文赛事实名，遮盖插画英文名 |
+| 圆角 | `Card` 使用 `clipBehavior: Clip.antiAlias`（勿 `Clip.none`）；封面上沿 `borderRadius` 10，与主题卡片一致 |
+| 地点行 | `ZhCn.city` · `ZhCn.country`；`maxLines: 1` + `FittedBox(scaleDown)`，单行不换行 |
+
 ## 场馆名称
 
 | 字段 | 含义 | 展示位置 |
 |---|---|---|
-| `name_en` + `ZhCn.stadiumName` | 赛事实名（如「达拉斯AT&T体育场」「休斯敦体育场」） | 列表、详情标题、赛程卡 |
+| `ZhCn.stadiumName` | 赛事实名（如「阿兹特克体育场」「达拉斯AT&T体育场」） | 宫格 caption、详情标题、赛程卡 |
+| 映射顺序 | `_stadiumsById` → `_stadiums[name_en]` → `_stadiums[fifa_name]` | `lib/core/l10n/zh_cn.dart`；API/缓存有时把 `fifa_name` 写入 `name_en`，**勿只按 `name_en` 查表** |
 | `fifa_name` | 球场日常商用名（如 `NRG Stadium`、`MetLife Stadium`） | 详情「球场常用名」 |
-| `city_en` + `ZhCn.city` | 主办城市 | 详情副标题 |
+| `city_en` + `ZhCn.city` | 主办城市 | 宫格地点行、详情 |
 
-数据源：`assets/data/stadiums.json`；中文映射在 `lib/core/l10n/zh_cn.dart` 的 `_stadiums`。
+离线数据源：`assets/data/stadiums.json`（`name_en` 为赛事用名）；线上 API 字段可能与打包 JSON 不一致，以 `id` 映射为准。
 
 ## 球队关注
 

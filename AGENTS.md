@@ -87,7 +87,7 @@ python generate_launcher_icons.py  # 从 assets/icon/app_icon.png 生成 Android
 - **JSON 解析走容错**：用 `core/utils/coerce.dart`，不要直接强转。
 - **下拉刷新**：赛程/积分榜/球队详情用 `RefreshIndicator`；`refresh()` 禁止先置 `loading`；列表 `skipLoadingOnReload: true`。细则见 [docs/UI.md](docs/UI.md)。
 - **分段标题**：用 `SectionTitle`，球队详情为「赛程」「出战名单」。
-- **Shell 底栏**：`CapsuleNavBar` 悬浮不占位；赛程 ~120px「回顶部」。Mono 炭蓝 + `ThemeMode.system`（`mono_palette.dart` / `app_theme.dart`）。
+- **Shell 底栏**：`CapsuleNavBar` 悬浮不占位；赛程 ~120px「回顶部」；离开赛程 Tab 须 `scheduleScrollNavProvider.reset()`，回 Tab 后 `SchedulePage` 首帧/`activate` 调 `_syncScrollNav()`（勿只靠 scroll listener）。Mono 炭蓝 + `ThemeMode.system`。
 - **Shell AppBar 标题**：四 Tab 用 `AppBarTitleImage` + `assets/titles/{games,rank,teams,stadium}.png`（默认高 30）；勿改回 `Text(AppInfo.displayName)`。换图须 Release 打包。细则 [docs/UI.md](docs/UI.md) §Shell AppBar 标题图。
 - **无 Material 涟漪**：`AppTheme` 全局 `NoSplash.splashFactory`（`TabBar`/`IconButton`/`InkWell` 等同理）；底栏仍用 `GestureDetector`。细则 [docs/UI.md](docs/UI.md)。
 - **赛程子 Tab**：`关注 | 赛中/未赛 | 完赛`；默认 `initialIndex: 1`。搜索：`schedule_search_panel.dart` 内嵌 `AnimatedSize`，与赛历互斥，**勿** `showSearch` 全屏。
@@ -104,7 +104,7 @@ python generate_launcher_icons.py  # 从 assets/icon/app_icon.png 生成 Android
 - **match_id_map.json 覆盖范围**：72 场小组赛全覆盖，32 场淘汰赛是 worldcup26.ir 占位符（`Winner Group X`），未映射。淘汰赛对阵敲钉后跑 `build_match_id_map.py` 增量补。
 - **换启动图标**：改 `res/mipmap-*`（AS Image Asset）**或** 覆盖 `assets/icon/app_icon.png` 后跑 `generate_launcher_icons.py`；两条链路互斥，AS 改完勿盲目跑脚本。任一方式后须 **Release 打包 + 重装 APK**。
 - **场馆本地图**：16 座均为 `assets/stadiums/{id}.png` 插画；`_pngIds` 覆盖 `1`–`16`。换图只覆盖 PNG，勿同 id 并存 `.jpg`。
-- **场馆显示名**：列表/标题用 `name_en`→`ZhCn.stadiumName`（赛事实名）；详情「球场常用名」用 `fifa_name`。改中文只动 `zh_cn.dart` + `stadiums.json`，勿混字段。
+- **场馆显示名**：`ZhCn.stadiumName` 优先 `_stadiumsById`，再 `name_en`/`fifa_name`（API 常混）；详情「球场常用名」=`fifa_name`。宫格 `StadiumCover(caption:)` 遮插画英文 + `Card` `Clip.antiAlias`。改中文主表 `zh_cn.dart`。
 
 ## 深入文档
 

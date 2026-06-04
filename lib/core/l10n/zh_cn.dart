@@ -57,14 +57,34 @@ class ZhCn {
     'Croatia': '克罗地亚',
   };
 
-  /// 赛事期间官方用名（与 [Stadium.nameEn] 对应；日常球场名见详情页「球场常用名」）。
+  /// 赛事期间中文用名（按 id 最稳；API 有时把 [Stadium.nameEn] 填成球场常用名）。
+  static const _stadiumsById = <String, String>{
+    '1': '阿兹特克体育场',
+    '2': '瓜达拉哈拉体育场',
+    '3': '蒙特雷体育场',
+    '4': '达拉斯AT&T体育场',
+    '5': '休斯敦体育场',
+    '6': '堪萨斯城市体育场',
+    '7': '亚特兰大体育场',
+    '8': '迈阿密体育场',
+    '9': '波士顿体育场',
+    '10': '费城体育场',
+    '11': '纽约/新泽西体育场',
+    '12': '多伦多体育场',
+    '13': 'BC体育馆',
+    '14': '西雅图体育场',
+    '15': '旧金山海湾体育场',
+    '16': '洛杉矶SoFi体育场',
+  };
+
+  /// 与打包 JSON [name_en] 对应；并兼容 API 返回的球场常用名。
   static const _stadiums = <String, String>{
-    'Mexico City Stadium': '墨西哥城体育场',
+    'Mexico City Stadium': '阿兹特克体育场',
     'Guadalajara Stadium': '瓜达拉哈拉体育场',
     'Monterrey Stadium': '蒙特雷体育场',
     'AT&T Stadium': '达拉斯AT&T体育场',
     'Houston Stadium': '休斯敦体育场',
-    'Kansas City Stadium': '堪萨斯城体育场',
+    'Kansas City Stadium': '堪萨斯城市体育场',
     'Atlanta Stadium': '亚特兰大体育场',
     'Miami Stadium': '迈阿密体育场',
     'Boston Stadium': '波士顿体育场',
@@ -75,6 +95,19 @@ class ZhCn {
     'Seattle Stadium': '西雅图体育场',
     'San Francisco Bay Area Stadium': '旧金山海湾体育场',
     'SoFi Stadium': '洛杉矶SoFi体育场',
+    'Estadio Azteca': '阿兹特克体育场',
+    'Estadio Akron': '瓜达拉哈拉体育场',
+    'Estadio BBVA': '蒙特雷体育场',
+    'NRG Stadium': '休斯敦体育场',
+    'GEHA Field at Arrowhead Stadium': '堪萨斯城市体育场',
+    'Mercedes-Benz Stadium': '亚特兰大体育场',
+    'Hard Rock Stadium': '迈阿密体育场',
+    'Gillette Stadium': '波士顿体育场',
+    'Lincoln Financial Field': '费城体育场',
+    'MetLife Stadium': '纽约/新泽西体育场',
+    'BMO Field': '多伦多体育场',
+    'Lumen Field': '西雅图体育场',
+    "Levi's Stadium": '旧金山海湾体育场',
   };
 
   static const _cities = <String, String>{
@@ -125,8 +158,16 @@ class ZhCn {
 
   static String teamNameEn(String nameEn) => _teams[nameEn] ?? nameEn;
 
-  static String stadiumName(Stadium stadium) =>
-      _stadiums[stadium.nameEn] ?? stadium.nameEn;
+  static String stadiumName(Stadium stadium) {
+    final byId = _stadiumsById[stadium.id];
+    if (byId != null) return byId;
+    final byEn = _stadiums[stadium.nameEn];
+    if (byEn != null) return byEn;
+    final byFifa = _stadiums[stadium.fifaName];
+    if (byFifa != null) return byFifa;
+    if (stadium.nameEn.isNotEmpty) return stadium.nameEn;
+    return stadium.fifaName;
+  }
 
   static String city(Stadium stadium) => _cities[stadium.cityEn] ?? stadium.cityEn;
 

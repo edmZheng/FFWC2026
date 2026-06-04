@@ -12,6 +12,9 @@ import '../../shared/widgets/stadium_cover.dart';
 class StadiumsPage extends ConsumerWidget {
   const StadiumsPage({super.key});
 
+  /// 与主题卡片圆角、宫格 InkWell 一致。
+  static const _gridCardRadius = 10.0;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(stadiumsProvider);
@@ -43,34 +46,33 @@ class StadiumsPage extends ConsumerWidget {
             return EdgeProximityScale(
               child: InkWell(
               onTap: () => context.push('/stadium/${s.id}'),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(_gridCardRadius),
               child: Card(
                 margin: EdgeInsets.zero,
-                clipBehavior: Clip.none,
+                clipBehavior: Clip.antiAlias,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Expanded(
-                      child: StadiumCover(stadiumId: s.id),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
-                      child: Text(
-                        name,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                      child: StadiumCover(
+                        stadiumId: s.id,
+                        caption: name,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(_gridCardRadius),
+                        ),
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
-                      child: Text(
-                        location,
-                        style: Theme.of(context).textTheme.labelSmall,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                      padding: const EdgeInsets.fromLTRB(10, 6, 10, 10),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          location,
+                          style: Theme.of(context).textTheme.labelSmall,
+                          maxLines: 1,
+                          softWrap: false,
+                        ),
                       ),
                     ),
                   ],

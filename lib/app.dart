@@ -155,6 +155,10 @@ class _ScaffoldWithNav extends ConsumerWidget {
                   scrollNav.scrollToTop?.call();
                   return;
                 }
+                // 离开赛程 tab 时清掉「回顶部」状态，避免切回后列表已在顶部但底栏仍残留。
+                if (i != 0 && currentIndex == 0) {
+                  ref.read(scheduleScrollNavProvider.notifier).reset();
+                }
                 context.go(_routes[i]);
               },
             ),

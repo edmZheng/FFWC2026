@@ -54,6 +54,13 @@ class StadiumDetailPage extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 16),
+              Text(
+                name,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 12),
               _infoRow('球场常用名', stadium.fifaName),
               _infoRow('所在城市', city),
               _infoRow('国家/地区', country),
