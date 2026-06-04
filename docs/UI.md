@@ -2,20 +2,39 @@
 
 面向贡献者与接手开发者的界面规范（与代码同步，2026-06-04）。
 
+## 交互反馈
+
+- **无 Material 水波**：`lib/core/theme/app_theme.dart` 设 `NoSplash.splashFactory`、透明 splash/highlight；`tabBarTheme` / `iconButtonTheme` 同步。新增可点控件勿单独恢复涟漪。
+
 ## 品牌与主题
 
 | 项 | 值 |
 |---|---|
-| 安装名 / AppBar 赛程页标题 | `FFWC2026`（`AppInfo.displayName`） |
+| 安装名 / `MaterialApp.title` | `FFWC2026`（`AppInfo.displayName`，`app.dart`） |
 | 主题 | Mono-design 炭蓝双模（H=225）：`MonoPalette.dark` / `MonoPalette.light` |
 | 跟随系统 | `MaterialApp.themeMode: ThemeMode.system`（`app.dart`） |
 | 字体 | Source Sans 3（`google_fonts`） |
+
+## Shell AppBar 标题图
+
+四个主 Tab 的 `AppBar.title` 为 PNG 横幅（非 `Text`），统一 `AppBarTitleImage`（`shared/widgets/app_bar_title_image.dart`）：
+
+| Tab | 构造 | 资源 | 读屏文案 |
+|---|---|---|---|
+| 赛程 | `.games()` | `assets/titles/games.png` | 赛程 |
+| 积分榜 | `.rank()` | `assets/titles/rank.png` | 积分榜 |
+| 球队 | `.teams()` | `assets/titles/teams.png` | 球队 |
+| 场馆 | `.stadium()` | `assets/titles/stadium.png` | 场馆 |
+
+- 默认显示高度 **30** 逻辑像素，`BoxFit.contain`，`centerTitle: true`。
+- 换图：覆盖对应 PNG 后 **Release 打包**（`pubspec` 注册 `assets/titles/` 目录）。
+- 详情页 AppBar 仍为 `Text`（队名、小组名等）；仅 Shell 四 Tab 用横幅。
 
 ## Shell 导航
 
 - **4 Tab**：赛程 / 积分榜 / 球队 / 场馆（无直播 Tab）
 - **底栏**：`CapsuleNavBar` 液态玻璃胶囊，悬浮于内容之上（`Stack`），不占底部横条
-- **点击**：`GestureDetector`，无涟漪/高亮，仅切换选中态
+- **点击**：`GestureDetector`，无涟漪/高亮，仅切换选中态（与下文全应用 `NoSplash` 一致）
 - **赛程回顶部**：赛程 Tab 列表滚过约 120px 后，第一个 Tab 变为圆圈 ↑ +「回顶部」；点击平滑滚回顶部（`scheduleScrollNavProvider` + `core/nav/schedule_scroll_nav.dart`）
 - 列表底部留白：`CapsuleNavMetrics.bottomInset(context)`，避免被胶囊遮挡
 
@@ -25,15 +44,35 @@
 |---|---|
 | 子 Tab | `关注` · `赛中 / 未赛` · `完赛`（`TabController` length 3） |
 | 默认子 Tab | `initialIndex: 1`（**赛中 / 未赛**），不是「关注」 |
-| 搜索 | AppBar 右上角 → `showSearch` + `ScheduleSearchDelegate`；按球队中文/英文名、FIFA 代码、名单球员名筛已确定赛程 |
+| 搜索 | AppBar 右上角 → `AnimatedSize` 下推 `ScheduleInlineSearchField` + `ScheduleSearchResults`（与赛历互斥展开）；按球队中文/英文名、FIFA 代码、名单球员名筛已确定赛程 |
 | 赛历入口 | AppBar **左上角** `calendar_month`（与右上搜索对称）；再点收起 |
+| 赛历 ⇄ 搜索 | **互斥**：展开其一自动收起另一（含清空赛历选日 / 搜索词） |
 | 赛历条 | Tab 下方 `ScheduleDayStrip`（`schedule_day_strip.dart`），`AnimatedSize` 约 320ms 下推 `TabBarView` |
 | 日期范围 | `scheduleCalendarDays`：已确定比赛最早～最晚日，并强制包含用户当前日历日（无固定 6/11–7/19） |
 | 默认选中 | `defaultCalendarSelectedDay()` → 用户当前日 |
-| 高亮规则 | `highlightCountByDay`：子 Tab **关注** 用 `followedMatches` 计场，**赛中/未赛**与**完赛**用全部已确定比赛；切换 Tab 时 `setState` 刷新条 |
+| 高亮规则 | `highlightCountByDay`：子 Tab **关注** / **赛中·未赛** / **完赛** 各用对应列表计场（仅有该 Tab 比赛的日期才高亮）；切换 Tab 时 `setState` 刷新条 |
 | 列表筛选 | 展开且已选日期时，`filterMatchesByCalendarDay` 筛三 Tab（北京时间，优先 `match_id_map` UTC） |
 | 实现勿踩 | **无** `/schedule/calendar` 路由；逻辑在 `core/utils/match_calendar.dart` |
 | 关注 Tab | `followedMatchesProvider`：主客队任一方为已关注 `teamId` 的 `isConfirmed` 比赛，按开赛时间排序 |
+
+## 积分榜页（`/standings`）
+
+| 项 | 说明 |
+|---|---|
+| 列表 | 12 组宫格预览，点进 `/group/:name` |
+| 刷新 | `RefreshIndicator` 下拉刷新（无 AppBar 刷新按钮） |
+| 官方规则 | AppBar 右上 `Icons.help_outline` → `context.push('/standings/rules')` |
+| 规则页 | `WorldCupRulesPage`（`DetailScaffold` + 可滚动正文）；内容依据 FIFA 公布赛制整理，非应用内排序算法说明 |
+
+## 场馆配图
+
+| 项 | 说明 |
+|---|---|
+| 映射 | `lib/core/stadium/stadium_photos.dart` → `assetPath` / `networkUrls` |
+| 本地 PNG 插画 | id `1` 墨西哥城、`2` 瓜达拉哈拉、`3` 蒙特雷、`4` 达拉斯、`6` 堪萨斯城、`8` 迈阿密、`9` 波士顿、`12` 多伦多、`13` 温哥华 |
+| 本地 JPG | id `5` `7` `10` `11` `14` `15` `16`（Wikimedia，打包进 `assets/stadiums/`） |
+| 回退 | 本地缺失时用 `_networkById` 同 id 的 Wikimedia URL |
+| 换图 | 覆盖 `assets/stadiums/{id}.png` 或 `.jpg` 后 **Release 打包**；PNG 场馆须列入 `_pngIds` |
 
 ## 球队关注
 
@@ -51,7 +90,7 @@
 
 - **Stack 布局**：下层全屏滚动，上层不透明 `Material` 顶区（**无**底部分割线）
 - 顶区始终在最上层；下方内容从顶区底边滚入/滚出
-- `DetailScrollClipScope` 将 3D 离屏动效的有效视口上沿设为顶区底边
+- `DetailScrollClipScope` 将离屏缩放的有效视口上沿设为顶区底边
 
 | 页面 | 固定顶区 | 随滚动 |
 |---|---|---|
@@ -84,9 +123,10 @@
 ## 列表卡片动效
 
 - `EdgeProximityScale`（`shared/widgets/edge_proximity_scale.dart`）：约 **1/3 出屏** 后触发
-- 效果：缩小 + **绕靠近相邻卡片的一边** 倾斜（纵向 `rotateX` / 横向 `rotateY`）+ **朝邻卡叠入下层**（`maxStackPull` 靠拢 + `translateZ` 后撤），非向外推开
-- 默认强度：`maxRotateX` 0.68、`perspective` 0.0018
-- 滚动列表/宫格设 `clipBehavior: Clip.none`，避免 3D 被裁切
+- 效果：**居中均匀缩小**（默认 `maxScale` 1.0 → `minScale` 0.88），无 3D 倾斜、位移或透明度
+- 滚动跟手（`Transform.scale` + 帧内 `scheduleFrameCallback` 校正）
+- 内容不足一屏（`maxScrollExtent <= 0`，如搜索短结果）时不缩放
+- 列表、宫格、赛程 `TabBarView` 设 `clipBehavior: Clip.none`，避免缩放被父级裁切
 - 已用于：赛程卡、积分榜/球队/场馆宫格、比赛详情 Card
 
 ## 比赛详情 AppBar

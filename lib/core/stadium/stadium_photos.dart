@@ -1,24 +1,20 @@
-/// 2026 世界杯 16 座场馆配图（Wikimedia Commons，已打包进 assets）。
+/// 2026 世界杯 16 座场馆配图（已打包进 assets；部分为定制插画）。
 class StadiumPhotos {
   StadiumPhotos._();
 
+  /// 使用 PNG 插画的场馆 id（其余为 Wikimedia JPG）。
+  static const _pngIds = {'1', '2', '3', '4', '6', '8', '9', '12', '13'};
+
   /// 本地高清图（优先展示，不依赖网络）。
   static String? assetPath(String stadiumId) {
+    if (_pngIds.contains(stadiumId)) {
+      return 'assets/stadiums/$stadiumId.png';
+    }
     switch (stadiumId) {
-      case '8':
-        return 'assets/stadiums/8.png';
-      case '1':
-      case '2':
-      case '3':
-      case '4':
       case '5':
-      case '6':
       case '7':
-      case '9':
       case '10':
       case '11':
-      case '12':
-      case '13':
       case '14':
       case '15':
       case '16':

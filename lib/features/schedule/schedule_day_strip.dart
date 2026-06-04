@@ -143,6 +143,9 @@ class _DayChip extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
+        splashFactory: NoSplash.splashFactory,
+        highlightColor: Colors.transparent,
+        hoverColor: Colors.transparent,
         borderRadius: BorderRadius.circular(8),
         child: Ink(
           width: 52,

@@ -35,17 +35,9 @@
 
 **Android Release 打包（用户说「打包」默认走此流程）** — 详见 [docs/BUILD.md](docs/BUILD.md)：
 
-```powershell
-cd G:\13_APP_Dev\20260603-FFWC
-$env:PATH = 'E:\DevTools\flutter\bin;E:\AndroidSDK\platform-tools;' + $env:PATH
-$env:ANDROID_HOME = 'E:\AndroidSDK'
-$env:GRADLE_USER_HOME = 'E:\DevTools\android-tools\.gradle'   # 勿设为 E:\AndroidSDK
-flutter pub get
-flutter build apk --release
-# 产物: build/app/outputs/flutter-apk/app-release.apk（快捷方式 lnk 指向该目录）
-```
+优先 `.\scripts\build_release.ps1`（已设 `PATH` / `ANDROID_HOME` / `GRADLE_USER_HOME` / 默认 `PUB_CACHE=G:\DevTools\pub-cache`）。手动打包见 [docs/BUILD.md](docs/BUILD.md)。
 
-或 `.\scripts\build_release.ps1`。
+项目在 **G:** 时：系统或会话须设 `PUB_CACHE` 与项目同盘，否则 Android Studio Gradle Sync 报 `different roots`。
 
 **收尾默认**：完成 Flutter UI/功能/资源/图标/`AndroidManifest` 等可安装变更后，**在同一轮对话内自动执行上述 Release 打包**（无需用户再催「打包」）。仅改文档/注释/Worker/纯脚本且不影响 APK 时可跳过。
 
@@ -81,6 +73,7 @@ python generate_launcher_icons.py  # 从 assets/icon/app_icon.png 生成 Android
 | `/team/:id` | TeamDetailPage | root（全屏） |
 | `/stadium/:id` | StadiumDetailPage | root（全屏） |
 | `/group/:name` | GroupDetailPage | root（全屏） |
+| `/standings/rules` | WorldCupRulesPage | root（全屏） |
 
 新增 shell Tab → 改 `app.dart` 的 `routes`、`_routes`、`_tabs` 与 `CapsuleNavBar`。
 
@@ -94,9 +87,12 @@ python generate_launcher_icons.py  # 从 assets/icon/app_icon.png 生成 Android
 - **JSON 解析走容错**：用 `core/utils/coerce.dart`，不要直接强转。
 - **下拉刷新**：赛程/积分榜/球队详情用 `RefreshIndicator`；`refresh()` 禁止先置 `loading`；列表 `skipLoadingOnReload: true`。细则见 [docs/UI.md](docs/UI.md)。
 - **分段标题**：用 `SectionTitle`，球队详情为「赛程」「出战名单」。
-- **Shell 底栏**：`CapsuleNavBar` 悬浮不占位；无点击涟漪；赛程滚过 ~120px 显示「回顶部」。Mono 炭蓝亮/暗双模 + `ThemeMode.system`（`mono_palette.dart` / `app_theme.dart`）。
-- **赛程子 Tab**：`关注 | 赛中/未赛 | 完赛`；**默认 `initialIndex: 1`**（赛中/未赛）。搜索见 `ScheduleSearchDelegate`。
-- **赛事日历**（内嵌，无独立路由）：AppBar 左上切换 `ScheduleDayStrip`（`features/schedule/schedule_day_strip.dart` + `core/utils/match_calendar.dart`）；`AnimatedSize` 下推三 Tab 列表；`scheduleCalendarDays` 范围（数据首尾比赛日并含用户当天）；展开默认今天；高亮与场次文案随当前子 Tab（**关注**=有关注球队比赛的日期，其它=有任意比赛）；点日按北京时间筛列表；再点收起恢复全量。**勿**新增 `/schedule/calendar` 全屏页。
+- **Shell 底栏**：`CapsuleNavBar` 悬浮不占位；赛程 ~120px「回顶部」。Mono 炭蓝 + `ThemeMode.system`（`mono_palette.dart` / `app_theme.dart`）。
+- **Shell AppBar 标题**：四 Tab 用 `AppBarTitleImage` + `assets/titles/{games,rank,teams,stadium}.png`（默认高 30）；勿改回 `Text(AppInfo.displayName)`。换图须 Release 打包。细则 [docs/UI.md](docs/UI.md) §Shell AppBar 标题图。
+- **无 Material 涟漪**：`AppTheme` 全局 `NoSplash.splashFactory`（`TabBar`/`IconButton`/`InkWell` 等同理）；底栏仍用 `GestureDetector`。细则 [docs/UI.md](docs/UI.md)。
+- **赛程子 Tab**：`关注 | 赛中/未赛 | 完赛`；默认 `initialIndex: 1`。搜索：`schedule_search_panel.dart` 内嵌 `AnimatedSize`，与赛历互斥，**勿** `showSearch` 全屏。
+- **赛事日历**（无独立路由）：左上 `ScheduleDayStrip` + `core/utils/match_calendar.dart`；`AnimatedSize` 下推列表；高亮/「X场」随子 Tab（关注=关注场次日，赛中·未赛=未完结，完赛=已完赛）；点日按北京时间筛三 Tab。**勿** `/schedule/calendar` 全屏。
+- **离屏卡片动效**：`EdgeProximityScale` 均匀缩小（1.0→0.88，约 1/3 出屏）；列表/宫格/赛程 `TabBarView` 须 `Clip.none`；短列表不缩放。细则 [docs/UI.md](docs/UI.md) §列表卡片动效。
 - **关注球队**：Toggle 走 `followedTeamsProvider`；prefs key `followed_team_ids`（勿与 `cache_*` 混用）。宫格列表用 `teamsGridProvider`（已关注置顶），勿直接用 `teamsProvider`。
 - **StatusChip 时间**：列表/详情 `showTime: false`；未开赛详情 AppBar 无 actions。开赛时间只在卡片正文与「赛事信息」。
 - **宫格 + 关注角标**：球队 Card 内容 `Positioned.fill` 居中，角标单独 `Positioned`，避免国旗偏移。
@@ -105,7 +101,8 @@ python generate_launcher_icons.py  # 从 assets/icon/app_icon.png 生成 Android
 - **HL_API_KEY 永远只在 Worker secret**：`wrangler secret put HL_API_KEY`，**不可**写入代码、`wrangler.toml`、git。轮换流程见 `cf-worker/README.md`。
 - **Highlightly 配额硬约束**：Free = 100 req/天，整届 WC ~300 次上游消耗。Worker KV TTL 24h 是配额保护，**不要**轻易缩短。
 - **match_id_map.json 覆盖范围**：72 场小组赛全覆盖，32 场淘汰赛是 worldcup26.ir 占位符（`Winner Group X`），未映射。淘汰赛对阵敲钉后跑 `build_match_id_map.py` 增量补。
-- **换启动图标**：覆盖 `assets/icon/app_icon.png` → `python scripts/generate_launcher_icons.py` → Release 打包。勿只改 `mipmap-*` 不更新主图。
+- **换启动图标**：改 `res/mipmap-*`（AS Image Asset）**或** 覆盖 `assets/icon/app_icon.png` 后跑 `generate_launcher_icons.py`；两条链路互斥，AS 改完勿盲目跑脚本。任一方式后须 **Release 打包 + 重装 APK**。
+- **场馆本地图**：`StadiumPhotos._pngIds` 与 `assets/stadiums/{id}.png` 一一对应；其余 id 用 `{id}.jpg`。换插画须同步 `_pngIds`，勿为同一 id 同时留 `.jpg` 与 `.png`。
 
 ## 深入文档
 

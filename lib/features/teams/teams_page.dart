@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/zh_cn.dart';
 import '../../providers.dart';
+import '../../shared/widgets/app_bar_title_image.dart';
 import '../../shared/widgets/capsule_nav_bar.dart';
 import '../../shared/widgets/edge_proximity_scale.dart';
 import '../../shared/widgets/team_badge.dart';
@@ -16,7 +17,7 @@ class TeamsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(teamsGridProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('球队')),
+      appBar: AppBar(title: const AppBarTitleImage.teams()),
       body: async.when(
         skipLoadingOnReload: true,
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -45,7 +46,7 @@ class TeamsPage extends ConsumerWidget {
               borderRadius: BorderRadius.circular(10),
               child: Card(
                 margin: EdgeInsets.zero,
-                clipBehavior: Clip.antiAlias,
+                clipBehavior: Clip.none,
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [

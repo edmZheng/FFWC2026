@@ -9,6 +9,7 @@
 | Flutter SDK | `E:\DevTools\flutter` |
 | Android SDK | `E:\AndroidSDK` |
 | Gradle 缓存（`GRADLE_USER_HOME`） | `E:\DevTools\android-tools\.gradle` |
+| Pub 缓存（`PUB_CACHE`，与项目在 **G:** 同盘） | `G:\DevTools\pub-cache`（未设时 `build_release.ps1` 会默认写入） |
 
 `android/local.properties` 已写 `sdk.dir` / `flutter.sdk`，一般无需再配。
 
@@ -41,25 +42,38 @@ flutter build apk --release
 
 | 文件 | 说明 |
 |------|------|
-| `build/app/outputs/flutter-apk/app-release.apk` | Release 单包（约 56MB，debug 签名） |
+| `build/app/outputs/flutter-apk/app-release.apk` | Release 单包（约 57MB，debug 签名） |
 | 项目根 `flutter-apk - 快捷方式.lnk` | 指向上述目录，便于资源管理器打开 |
 
 ## 启动图标
 
 | 项 | 说明 |
 |---|---|
-| 主图 | `assets/icon/app_icon.png`（建议 1024×1024 正方 PNG） |
-| 设计稿 | `engineering/Appicon.psd`（可选，导出后再覆盖主图） |
-| 安装名 | `AndroidManifest` → `android:label="FFWC2026"` |
-| 引用 | `@mipmap/ic_launcher` → `android/app/src/main/res/mipmap-*/ic_launcher.png` |
+| 清单引用 | `AndroidManifest` → `android:icon="@mipmap/ic_launcher"` |
+| 安装名 | `android:label="FFWC2026"` |
+| 资源目录 | `android/app/src/main/res/mipmap-*`（含 `mipmap-anydpi-v26` 自适应图标时会有 `.webp` / `ic_launcher.xml`） |
+| 脚本主图（可选） | `assets/icon/app_icon.png`（1024×1024 PNG，仅 **脚本链路** 需要） |
+| 设计稿（可选） | `engineering/Appicon.psd` |
 
-换图标流程：**覆盖主图** → 生成各密度 → **Release 打包**（仅改 mipmap 不打包，桌面图标不会变）。
+**改完图标后必做**：`flutter build apk --release`（或 `.\scripts\build_release.ps1`）→ 安装新 APK；桌面仍旧图时先卸载再装。
+
+### 方式 A：Android Studio Image Asset（当前常用）
+
+1. 打开 `android` 子工程（Gradle 同步成功；项目在 G: 时须配置 `PUB_CACHE`，见下文「常见问题」）。
+2. **Android** 视图 → `app` → `res` 右键 **New → Image Asset**（或 **File → New → Image Asset**），名称保持 `ic_launcher`。
+3. 完成后执行 **Release 打包**（见上一节）。
+
+勿在 A 之后直接跑 `generate_launcher_icons.py`，会覆盖 AS 生成的 `mipmap-*`。若要与仓库主图对齐，可把 `mipmap-xxxhdpi` 导出图覆盖 `assets/icon/app_icon.png` 再决定是否用脚本重建。
+
+### 方式 B：主图 + 脚本
 
 ```powershell
-# 需已安装 Pillow: pip install pillow
+# 覆盖 assets/icon/app_icon.png 后；需 Pillow: pip install pillow
 python scripts/generate_launcher_icons.py
 .\scripts\build_release.ps1
 ```
+
+脚本只写入各密度 `ic_launcher.png`，不含自适应 `webp`；若需自适应图标请用方式 A 或自行维护 `mipmap-anydpi-v26`。
 
 ## 签名
 

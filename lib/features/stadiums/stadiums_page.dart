@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/zh_cn.dart';
 import '../../providers.dart';
+import '../../shared/widgets/app_bar_title_image.dart';
 import '../../shared/widgets/capsule_nav_bar.dart';
 import '../../shared/widgets/edge_proximity_scale.dart';
 import '../../shared/widgets/stadium_cover.dart';
@@ -15,7 +16,7 @@ class StadiumsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(stadiumsProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('场馆')),
+      appBar: AppBar(title: const AppBarTitleImage.stadium()),
       body: async.when(
         skipLoadingOnReload: true,
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -45,7 +46,7 @@ class StadiumsPage extends ConsumerWidget {
               borderRadius: BorderRadius.circular(10),
               child: Card(
                 margin: EdgeInsets.zero,
-                clipBehavior: Clip.antiAlias,
+                clipBehavior: Clip.none,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [

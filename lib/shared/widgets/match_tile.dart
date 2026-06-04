@@ -48,7 +48,7 @@ class MatchTile extends ConsumerWidget {
               cs.outlineVariant,
         ),
       ),
-      clipBehavior: Clip.antiAlias,
+      clipBehavior: Clip.none,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(_radius),

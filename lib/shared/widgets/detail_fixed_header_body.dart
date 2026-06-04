@@ -22,7 +22,7 @@ class DetailScrollClipScope extends InheritedWidget {
   }
 }
 
-/// 详情页：顶区固定在最上层，下方内容从顶区底边滚入/滚出（3D 动效不遮挡顶区）。
+/// 详情页：顶区固定在最上层，下方内容从顶区底边滚入/滚出（离屏缩放视口自顶区底边起算）。
 class DetailFixedHeaderBody extends StatefulWidget {
   const DetailFixedHeaderBody({
     super.key,

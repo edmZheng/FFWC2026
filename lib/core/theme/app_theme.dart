@@ -10,6 +10,10 @@ class AppTheme {
   static const _radiusCard = 10.0;
   static const _radiusChip = 6.0;
 
+  /// 全局无点击涟漪/水波（与底栏 [CapsuleNavBar] 的 GestureDetector 一致）。
+  static const _noSplash = NoSplash.splashFactory;
+  static const _noOverlay = WidgetStatePropertyAll<Color?>(Colors.transparent);
+
   static ThemeData get light => _build(MonoPalette.light, Brightness.light);
   static ThemeData get dark => _build(MonoPalette.dark, Brightness.dark);
 
@@ -141,8 +145,13 @@ class AppTheme {
           fontSize: 13,
         ),
         dividerColor: Colors.transparent,
-        overlayColor: WidgetStatePropertyAll(
-          MonoPalette.withAlpha(p.accentLight, 0.08),
+        overlayColor: _noOverlay,
+        splashFactory: _noSplash,
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          splashFactory: _noSplash,
+          highlightColor: Colors.transparent,
         ),
       ),
       chipTheme: ChipThemeData(
@@ -166,8 +175,9 @@ class AppTheme {
         color: p.accent,
         linearTrackColor: p.surfaceVariant,
       ),
-      splashColor: MonoPalette.withAlpha(p.accentLight, 0.12),
-      highlightColor: MonoPalette.withAlpha(p.accentLight, 0.06),
+      splashFactory: _noSplash,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
     );
   }
 }

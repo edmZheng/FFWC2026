@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/l10n/zh_cn.dart';
 import '../../data/models/group_standing.dart';
 import '../../providers.dart';
+import '../../shared/widgets/app_bar_title_image.dart';
 import '../../shared/widgets/capsule_nav_bar.dart';
 import '../../shared/widgets/edge_proximity_scale.dart';
 import '../../shared/widgets/team_badge.dart';
@@ -16,7 +17,16 @@ class StandingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(standingsProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('积分榜')),
+      appBar: AppBar(
+        title: const AppBarTitleImage.rank(),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            tooltip: '官方规则',
+            onPressed: () => context.push('/standings/rules'),
+          ),
+        ],
+      ),
       body: async.when(
         skipLoadingOnReload: true,
         loading: () => const Center(child: CircularProgressIndicator()),

@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/constants/app_info.dart';
 import '../../core/nav/schedule_scroll_nav.dart';
 import '../../core/utils/match_calendar.dart';
 import '../../data/models/match.dart';
 import '../../data/repositories/match_id_map_repository.dart';
 import '../../providers.dart';
+import '../../shared/widgets/app_bar_title_image.dart';
 import '../../shared/widgets/capsule_nav_bar.dart';
 import '../../shared/widgets/match_tile.dart';
 import 'schedule_day_strip.dart';
-import 'schedule_search_delegate.dart';
+import 'schedule_search_panel.dart';
 
 class SchedulePage extends ConsumerStatefulWidget {
   const SchedulePage({super.key});
@@ -32,6 +32,8 @@ class _SchedulePageState extends ConsumerState<SchedulePage>
   static const _defaultTabIndex = 1;
 
   bool _calendarOpen = false;
+  bool _searchOpen = false;
+  String _searchQuery = '';
   DateTime? _selectedDay;
 
   @override
@@ -68,8 +70,35 @@ class _SchedulePageState extends ConsumerState<SchedulePage>
         _selectedDay = null;
       } else {
         _calendarOpen = true;
+        _searchOpen = false;
         _selectedDay = defaultCalendarSelectedDay();
       }
+    });
+    for (var i = 0; i < _scrollControllers.length; i++) {
+      _scrollToTop(i);
+    }
+  }
+
+  void _toggleSearch() {
+    setState(() {
+      if (_searchOpen) {
+        _searchOpen = false;
+        _searchQuery = '';
+      } else {
+        _searchOpen = true;
+        _calendarOpen = false;
+        _selectedDay = null;
+      }
+    });
+    for (var i = 0; i < _scrollControllers.length; i++) {
+      _scrollToTop(i);
+    }
+  }
+
+  void _closeSearch() {
+    setState(() {
+      _searchOpen = false;
+      _searchQuery = '';
     });
     for (var i = 0; i < _scrollControllers.length; i++) {
       _scrollToTop(i);
@@ -149,21 +178,14 @@ class _SchedulePageState extends ConsumerState<SchedulePage>
           tooltip: _calendarOpen ? '收起赛历' : '赛事日历',
           onPressed: _toggleCalendar,
         ),
-        title: Text(
-          AppInfo.displayName,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                letterSpacing: 0.04,
-                fontWeight: FontWeight.w600,
-              ),
-        ),
+        title: const AppBarTitleImage.games(),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search),
-            tooltip: '搜索赛程',
-            onPressed: () => showSearch<void>(
-              context: context,
-              delegate: ScheduleSearchDelegate(ref),
+            icon: Icon(
+              _searchOpen ? Icons.search : Icons.search_outlined,
             ),
+            tooltip: _searchOpen ? '收起搜索' : '搜索赛程',
+            onPressed: _toggleSearch,
           ),
         ],
         bottom: TabBar(
@@ -184,8 +206,18 @@ class _SchedulePageState extends ConsumerState<SchedulePage>
         ),
         data: (matches) {
           final confirmed = matches.where((m) => m.isConfirmed).toList();
-          final matchCounts = matchCountByCalendarDay(
-            matches: confirmed,
+          final activeConfirmed = confirmed
+              .where((m) => m.status != MatchStatus.finished)
+              .toList();
+          final finishedConfirmed = confirmed
+              .where((m) => m.status == MatchStatus.finished)
+              .toList();
+          final activeMatchCounts = matchCountByCalendarDay(
+            matches: activeConfirmed,
+            kickoffUtcById: kickoffMap,
+          );
+          final finishedMatchCounts = matchCountByCalendarDay(
+            matches: finishedConfirmed,
             kickoffUtcById: kickoffMap,
           );
           final calendarDays = scheduleCalendarDays(
@@ -197,10 +229,13 @@ class _SchedulePageState extends ConsumerState<SchedulePage>
             matches: followedMatches,
             kickoffUtcById: kickoffMap,
           );
-          final onFollowTab = _tabController.index == 0;
-          final highlightCounts =
-              onFollowTab ? followedMatchCounts : matchCounts;
-          final labelCounts = onFollowTab ? followedMatchCounts : matchCounts;
+          final tabIndex = _tabController.index;
+          final highlightCounts = switch (tabIndex) {
+            0 => followedMatchCounts,
+            1 => activeMatchCounts,
+            _ => finishedMatchCounts,
+          };
+          final labelCounts = highlightCounts;
           final followedEmptyText = hasFollowedTeams
               ? (_calendarOpen ? '该日暂无关注球队的赛程' : '暂无关注球队的赛程')
               : '尚未关注球队\n在球队页或球队详情中点击爱心即可关注';
@@ -233,33 +268,72 @@ class _SchedulePageState extends ConsumerState<SchedulePage>
                       )
                     : const SizedBox(width: double.infinity),
               ),
+              AnimatedSize(
+                duration: _calendarAnimDuration,
+                curve: Curves.easeOutCubic,
+                alignment: Alignment.topCenter,
+                child: _searchOpen
+                    ? Material(
+                        color: Theme.of(context).colorScheme.surfaceContainerLow,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: ScheduleInlineSearchField(
+                                  query: _searchQuery,
+                                  onChanged: (q) =>
+                                      setState(() => _searchQuery = q),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.close),
+                                tooltip: '收起搜索',
+                                onPressed: _closeSearch,
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : const SizedBox(width: double.infinity),
+              ),
               Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _MatchList(
-                      scrollController: _scrollControllers[0],
-                      matches: followed,
-                      emptyText: followedEmptyText,
-                      onRefresh: () =>
-                          ref.read(worldCupDataProvider.notifier).refresh(),
-                    ),
-                    _MatchList(
-                      scrollController: _scrollControllers[1],
-                      matches: active,
-                      emptyText: _calendarOpen ? dayFilterEmpty : '暂无未完结赛程',
-                      onRefresh: () =>
-                          ref.read(worldCupDataProvider.notifier).refresh(),
-                    ),
-                    _MatchList(
-                      scrollController: _scrollControllers[2],
-                      matches: finished,
-                      emptyText: _calendarOpen ? dayFilterEmpty : '暂无已完场比赛',
-                      onRefresh: () =>
-                          ref.read(worldCupDataProvider.notifier).refresh(),
-                    ),
-                  ],
-                ),
+                child: _searchOpen
+                    ? ScheduleSearchResults(query: _searchQuery)
+                    : TabBarView(
+                        controller: _tabController,
+                        clipBehavior: Clip.none,
+                        children: [
+                          _MatchList(
+                            scrollController: _scrollControllers[0],
+                            matches: followed,
+                            emptyText: followedEmptyText,
+                            onRefresh: () => ref
+                                .read(worldCupDataProvider.notifier)
+                                .refresh(),
+                          ),
+                          _MatchList(
+                            scrollController: _scrollControllers[1],
+                            matches: active,
+                            emptyText: _calendarOpen
+                                ? dayFilterEmpty
+                                : '暂无未完结赛程',
+                            onRefresh: () => ref
+                                .read(worldCupDataProvider.notifier)
+                                .refresh(),
+                          ),
+                          _MatchList(
+                            scrollController: _scrollControllers[2],
+                            matches: finished,
+                            emptyText: _calendarOpen
+                                ? dayFilterEmpty
+                                : '暂无已完场比赛',
+                            onRefresh: () => ref
+                                .read(worldCupDataProvider.notifier)
+                                .refresh(),
+                          ),
+                        ],
+                      ),
               ),
             ],
           );

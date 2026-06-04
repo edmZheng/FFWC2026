@@ -11,6 +11,7 @@ import 'features/stadiums/stadium_detail_page.dart';
 import 'features/stadiums/stadiums_page.dart';
 import 'features/standings/group_detail_page.dart';
 import 'features/standings/standings_page.dart';
+import 'features/standings/world_cup_rules_page.dart';
 import 'features/teams/team_detail_page.dart';
 import 'features/teams/teams_page.dart';
 import 'shared/widgets/capsule_nav_bar.dart';
@@ -71,6 +72,11 @@ final router = GoRouter(
       parentNavigatorKey: _rootNavKey,
       builder: (_, state) =>
           GroupDetailPage(groupName: state.pathParameters['name']!),
+    ),
+    GoRoute(
+      path: '/standings/rules',
+      parentNavigatorKey: _rootNavKey,
+      builder: (_, __) => const WorldCupRulesPage(),
     ),
   ],
 );

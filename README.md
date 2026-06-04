@@ -4,11 +4,11 @@
 
 ## 功能
 
-- **赛程**：48 队 × 104 场；子 Tab **关注 / 赛中·未赛 / 完赛**（默认「赛中·未赛」）；左上 **赛历**（展开横向日期条，`AnimatedSize` 下推列表，按北京时间筛当日；关注 Tab 高亮「有关注球队比赛」的日期）；右上 **搜索**（球队名、球员名）；**开赛时间统一北京时间**（UTC+8）
-- **积分榜**：12 个小组排名表
+- **赛程**：48 队 × 104 场；子 Tab **关注 / 赛中·未赛 / 完赛**（默认「赛中·未赛」）；左上 **赛历**、右上 **搜索**（均 `AnimatedSize` 下推，互斥展开；赛历高亮随当前子 Tab）；按北京时间筛当日；搜索支持球队名、球员名；**开赛时间统一北京时间**（UTC+8）
+- **积分榜**：12 个小组排名表；AppBar 右上 **官方规则**（`help_outline`）→ 2026 赛制与排名规则全文
 - **球队**：**关注**（爱心，持久化本地）；宫格已关注置顶 + 角标；详情顶栏队徽 + 小组 / FIFA 排名；**赛程**、**出战名单**（26 人，中文名 + 队长标）
 - **首发名单**：单场比赛详情页展示双方首发 + 替补 + 阵型，赛前 30-60 分钟自动出现
-- **场馆**：16 座球场详情页 + 本地预置封面图
+- **场馆**：16 座球场详情页 + 本地预置封面（**9 座定制插画 PNG**，其余 7 座 Wikimedia JPG；映射见 `lib/core/stadium/stadium_photos.dart`）
 - **离线优先**：网络不可用回退打包资产 JSON，App 始终可打开
 
 ## 技术栈
@@ -32,16 +32,13 @@ flutter test
 flutter analyze
 ```
 
-**Release APK（本机 Windows）**：见 [docs/BUILD.md](docs/BUILD.md)。简要：
+**Release APK（本机 Windows）**：见 [docs/BUILD.md](docs/BUILD.md)（环境变量、`PUB_CACHE` 与 G: 盘 Gradle、启动图标双路径）。
 
 ```powershell
-$env:PATH = 'E:\DevTools\flutter\bin;E:\AndroidSDK\platform-tools;' + $env:PATH
-$env:ANDROID_HOME = 'E:\AndroidSDK'
-$env:GRADLE_USER_HOME = 'E:\DevTools\android-tools\.gradle'
-flutter pub get && flutter build apk --release
+.\scripts\build_release.ps1
 ```
 
-产物：`build/app/outputs/flutter-apk/app-release.apk`（约 56MB，debug 签名）。
+产物：`build/app/outputs/flutter-apk/app-release.apk`（约 57MB，debug 签名）。换启动图标后须重装 APK（必要时先卸载旧版）。
 
 ## 数据来源
 
@@ -79,9 +76,9 @@ lib/
 │       ├── followed_teams_store.dart        # 关注球队 id（SharedPreferences）
 │       └── lineup_repository.dart           # Worker → Highlightly /lineups
 ├── features/
-│   ├── schedule/                            # 赛程 + 内嵌赛历条 + 搜索 + 关注 Tab
-│   └── …                                    # standings / teams / stadiums / match_detail
-└── shared/widgets/                          # MatchTile / CapsuleNavBar / EdgeProximityScale / TeamFollowButton 等
+│   ├── schedule/                            # schedule_page / day_strip / search_panel / search_index
+│   └── …                                    # standings（含 world_cup_rules_page）/ teams / stadiums / match_detail
+└── shared/widgets/                          # AppBarTitleImage / MatchTile / CapsuleNavBar / EdgeProximityScale 等
 
 UI 约定见 [docs/UI.md](docs/UI.md)。
 
@@ -89,8 +86,9 @@ cf-worker/                                   # Cloudflare Worker 代理（独立
 scripts/                                     # 数据脚本 + build_release / generate_launcher_icons
 assets/
 ├── data/                                    # games/teams/groups/stadiums/squads/fifa_rankings/match_id_map
-├── icon/app_icon.png                        # Android 启动图标主图
-└── stadiums/                                # 16 张球场图
+├── icon/app_icon.png                        # 脚本生成 mipmap 用主图；AS Image Asset 可直接改 res/mipmap-*
+├── titles/                                  # Shell 四 Tab AppBar 横幅（games / rank / teams / stadium）
+└── stadiums/                                # 16 张球场图（id 1,2,3,4,6,8,9,12,13 为 .png，其余 .jpg）
 ```
 
 更多面向贡献者/AI 的约定与架构细节见 [AGENTS.md](AGENTS.md)。Worker 部署/换 key 见 [cf-worker/README.md](cf-worker/README.md)。
