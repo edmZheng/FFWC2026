@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/api/api_client.dart';
 import 'core/cache/cache_store.dart';
+import 'core/utils/teams_grid_sort.dart';
 import 'data/models/group_standing.dart';
 import 'data/models/match.dart';
 import 'data/models/stadium.dart';
@@ -12,11 +13,13 @@ import 'data/models/player.dart';
 import 'data/models/team.dart';
 import 'core/api/endpoints.dart';
 import 'data/models/lineup.dart';
+import 'data/repositories/followed_teams_store.dart';
 import 'data/repositories/lineup_repository.dart';
 import 'data/repositories/match_id_map_repository.dart';
 import 'data/repositories/ranking_repository.dart';
 import 'data/repositories/squad_repository.dart';
 import 'data/repositories/worldcup_repository.dart';
+import 'features/schedule/schedule_search_index.dart';
 
 // ─── Infrastructure ──────────────────────────────────────────────────────────
 
@@ -69,6 +72,14 @@ final teamsProvider = Provider<AsyncValue<List<Team>>>(
   (ref) => ref.watch(worldCupDataProvider).whenData((d) => d.teams),
 );
 
+/// 球队宫格：已关注球队排在最前，组内保持 API 原始顺序。
+final teamsGridProvider = Provider<AsyncValue<List<Team>>>((ref) {
+  final followed = ref.watch(followedTeamsProvider);
+  return ref.watch(teamsProvider).whenData(
+        (teams) => sortTeamsWithFollowedFirst(teams, followed),
+      );
+});
+
 final stadiumsProvider = Provider<AsyncValue<List<Stadium>>>(
   (ref) => ref.watch(worldCupDataProvider).whenData((d) => d.stadiums),
 );
@@ -82,6 +93,61 @@ final liveMatchesProvider = Provider<AsyncValue<List<Match>>>(
         (ms) => ms.where((m) => m.status == MatchStatus.live).toList(),
       ),
 );
+
+// ─── Followed teams ───────────────────────────────────────────────────────────
+
+final followedTeamsStoreProvider = Provider<FollowedTeamsStore>(
+  (ref) => FollowedTeamsStore(ref.watch(sharedPreferencesProvider)),
+);
+
+class FollowedTeamsNotifier extends Notifier<Set<String>> {
+  @override
+  Set<String> build() => ref.watch(followedTeamsStoreProvider).read();
+
+  Future<void> toggle(String teamId) async {
+    final next = Set<String>.from(state);
+    if (next.contains(teamId)) {
+      next.remove(teamId);
+    } else {
+      next.add(teamId);
+    }
+    state = next;
+    await ref.read(followedTeamsStoreProvider).write(next);
+  }
+}
+
+final followedTeamsProvider =
+    NotifierProvider<FollowedTeamsNotifier, Set<String>>(
+  FollowedTeamsNotifier.new,
+);
+
+int _compareMatchesByKickoff(Match a, Match b) {
+  final da = a.localDate;
+  final db = b.localDate;
+  if (da == null && db == null) return a.id.compareTo(b.id);
+  if (da == null) return 1;
+  if (db == null) return -1;
+  final c = da.compareTo(db);
+  return c != 0 ? c : a.id.compareTo(b.id);
+}
+
+/// 关注球队的全部已确定赛程（按开赛时间排序）。
+final followedMatchesProvider = Provider<AsyncValue<List<Match>>>((ref) {
+  final followed = ref.watch(followedTeamsProvider);
+  if (followed.isEmpty) return const AsyncValue.data([]);
+  return ref.watch(matchesProvider).whenData((ms) {
+    final list = ms
+        .where(
+          (m) =>
+              m.isConfirmed &&
+              (followed.contains(m.homeTeamId) ||
+                  followed.contains(m.awayTeamId)),
+        )
+        .toList()
+      ..sort(_compareMatchesByKickoff);
+    return list;
+  });
+});
 
 // ─── Live Polling ─────────────────────────────────────────────────────────────
 
@@ -150,6 +216,14 @@ final squadRepositoryProvider = Provider<SquadRepository>(
 final squadByTeamIdProvider =
     FutureProvider.family<List<Player>, String>((ref, teamId) async {
   return ref.watch(squadRepositoryProvider).forTeam(teamId);
+});
+
+/// 赛程搜索索引（球队展示名 + 全库球员名）。
+final scheduleSearchIndexProvider =
+    FutureProvider<ScheduleSearchIndex>((ref) async {
+  final teams = ref.watch(teamsProvider).valueOrNull ?? const [];
+  final squads = await ref.watch(squadRepositoryProvider).load();
+  return ScheduleSearchIndex.build(teams: teams, squads: squads);
 });
 
 // ─── FIFA Ranking (bundled asset) ─────────────────────────────────────────────

@@ -7,7 +7,7 @@
 
 - `main.dart` → 初始化 `SharedPreferences`，用 `sharedPreferencesProvider.overrideWithValue` 注入。
 - `app.dart` → `MaterialApp.router` + `go_router` + `ThemeMode.system`。Tab 页走 `ShellRoute`；详情页用 `parentNavigatorKey: _rootNavKey`（全屏）。
-- `providers.dart` → 所有全局 provider：主数据、squads、rankings、match_id_map、lineups、live polling。
+- `providers.dart` → 全局 provider：主数据、squads、rankings、match_id_map、lineups、live polling、**关注球队**（`followed_team_ids`）、**赛程搜索索引**、**宫格球队排序**（`teamsGridProvider`）。
 - `core/` 基础设施，`data/` 模型+仓库，`features/` 按页面，`shared/widgets/` 复用组件。
 - `cf-worker/` 独立的 Cloudflare Worker 项目（**不是** Flutter 源码），代理 Highlightly lineups 并 KV 缓存 24h。
 - `scripts/` 开发期一次性脚本（Python）：build_squads / fetch_squad_meta / refine_zh / build_match_id_map 等。
@@ -95,6 +95,10 @@ python generate_launcher_icons.py  # 从 assets/icon/app_icon.png 生成 Android
 - **下拉刷新**：赛程/积分榜/球队详情用 `RefreshIndicator`；`refresh()` 禁止先置 `loading`；列表 `skipLoadingOnReload: true`。细则见 [docs/UI.md](docs/UI.md)。
 - **分段标题**：用 `SectionTitle`，球队详情为「赛程」「出战名单」。
 - **Shell 底栏**：`CapsuleNavBar` 悬浮不占位；无点击涟漪；赛程滚过 ~120px 显示「回顶部」。Mono 炭蓝亮/暗双模 + `ThemeMode.system`（`mono_palette.dart` / `app_theme.dart`）。
+- **赛程子 Tab**：`关注 | 赛中/未赛 | 完赛`；**默认 `initialIndex: 1`**（赛中/未赛）。搜索见 `ScheduleSearchDelegate`。
+- **关注球队**：Toggle 走 `followedTeamsProvider`；prefs key `followed_team_ids`（勿与 `cache_*` 混用）。宫格列表用 `teamsGridProvider`（已关注置顶），勿直接用 `teamsProvider`。
+- **StatusChip 时间**：列表/详情 `showTime: false`；未开赛详情 AppBar 无 actions。开赛时间只在卡片正文与「赛事信息」。
+- **宫格 + 关注角标**：球队 Card 内容 `Positioned.fill` 居中，角标单独 `Positioned`，避免国旗偏移。
 - **详情顶区**：小组/球队详情用 `DetailFixedHeaderBody`（顶区 Stack 最上层、无底线）；小组仅积分榜固定，「赛程」随滚。细则见 [docs/UI.md](docs/UI.md)。
 - **直播轮询**：`livePollingProvider` 仍保留（`live_page` 未挂 Tab）。别在普通页面常驻轮询。
 - **HL_API_KEY 永远只在 Worker secret**：`wrangler secret put HL_API_KEY`，**不可**写入代码、`wrangler.toml`、git。轮换流程见 `cf-worker/README.md`。
@@ -108,6 +112,6 @@ python generate_launcher_icons.py  # 从 assets/icon/app_icon.png 生成 Android
 |---|---|
 | 项目概览 / 功能 / 跑起来 | `README.md` |
 | Android Release 打包 / 环境变量 | `docs/BUILD.md` |
-| UI / 刷新 / 导航 / 文案 | `docs/UI.md` |
+| UI / 刷新 / 导航 / 关注 / 搜索 / 动效 | `docs/UI.md` |
 | Worker 部署 / 换 key / KV 调试 | `cf-worker/README.md` |
 | 球员名单原始数据 | `scripts/2026_squads_wiki.md` |

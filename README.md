@@ -4,9 +4,9 @@
 
 ## 功能
 
-- **赛程**：48 队 × 104 场，按阶段 / 小组筛选；**开赛时间统一显示北京时间**（UTC+8，无 DST，不依赖手机时区）
+- **赛程**：48 队 × 104 场；子 Tab **关注 / 赛中·未赛 / 完赛**（默认「赛中·未赛」）；右上角 **搜索**（球队名、球员名）；关注球队的赛程聚合在「关注」Tab；**开赛时间统一北京时间**（UTC+8）
 - **积分榜**：12 个小组排名表
-- **球队**：详情页顶栏居中展示队徽 + 小组 / FIFA 排名；下方 **赛程**、**出战名单**（26 人，GK/DF/MF/FW + 中文名 + 队长标）
+- **球队**：**关注**（爱心，持久化本地）；宫格已关注置顶 + 角标；详情顶栏队徽 + 小组 / FIFA 排名；**赛程**、**出战名单**（26 人，中文名 + 队长标）
 - **首发名单**：单场比赛详情页展示双方首发 + 替补 + 阵型，赛前 30-60 分钟自动出现
 - **场馆**：16 座球场详情页 + 本地预置封面图
 - **离线优先**：网络不可用回退打包资产 JSON，App 始终可打开
@@ -68,7 +68,7 @@ lib/
 │   ├── constants/app_info.dart              # 显示名 FFWC2026
 │   ├── nav/schedule_scroll_nav.dart         # 赛程页 → 底栏「回顶部」状态
 │   ├── theme/                               # AppTheme + mono_palette（炭蓝双模）
-│   └── utils/                               # coerce, match_time (Beijing TZ), flag_url
+│   └── utils/                               # coerce, match_time, teams_grid_sort, flag_url
 ├── data/
 │   ├── models/                              # Match / Team / Stadium / GroupStanding / Player / Lineup
 │   └── repositories/
@@ -76,9 +76,12 @@ lib/
 │       ├── squad_repository.dart            # 26 人名单（assets 离线）
 │       ├── ranking_repository.dart          # FIFA 排名（assets 离线）
 │       ├── match_id_map_repository.dart     # worldcup26 → Highlightly + UTC
+│       ├── followed_teams_store.dart        # 关注球队 id（SharedPreferences）
 │       └── lineup_repository.dart           # Worker → Highlightly /lineups
-├── features/                                # schedule / standings / teams / stadiums / match_detail 等
-└── shared/widgets/                          # MatchTile / CapsuleNavBar / DetailFixedHeaderBody / EdgeProximityScale 等
+├── features/
+│   ├── schedule/                            # 赛程 + 搜索 + 关注 Tab
+│   └── …                                    # standings / teams / stadiums / match_detail
+└── shared/widgets/                          # MatchTile / CapsuleNavBar / EdgeProximityScale / TeamFollowButton 等
 
 UI 约定见 [docs/UI.md](docs/UI.md)。
 

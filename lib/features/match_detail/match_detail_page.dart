@@ -78,7 +78,12 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
 
     return DetailScaffold(
       title: Text(MatchTime.chineseStage(match.stage.label)),
-      actions: [StatusChip(match: match), const SizedBox(width: 12)],
+      actions: match.status == MatchStatus.notStarted
+          ? null
+          : [
+              StatusChip(match: match, showTime: false),
+              const SizedBox(width: 12),
+            ],
       body: ListView(
         clipBehavior: Clip.none,
         padding: const EdgeInsets.all(16),

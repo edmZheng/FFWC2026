@@ -5,18 +5,26 @@ import 'package:flutter/scheduler.dart';
 
 import 'detail_fixed_header_body.dart';
 
-/// 滚动时卡片离屏：iTunes 唱片式 X 轴倾斜 + 缩放堆叠。
+/// 滚动时卡片离屏：早期 iTunes 唱片集式 3D——缩小、后撤并朝相邻卡片叠入下层。
 enum EdgeScaleAxis { vertical, horizontal, both }
+
+/// 卡片从哪一侧滑出视口。
+enum _ExitEdge { none, top, bottom, left, right }
 
 class EdgeProximityScale extends StatefulWidget {
   const EdgeProximityScale({
     super.key,
     required this.child,
-    this.minScale = 0.82,
+    this.minScale = 0.84,
     this.maxScale = 1.0,
-    this.maxRotateX = 0.42,
-    this.maxTranslate = 14.0,
-    this.minOpacity = 0.55,
+    this.maxRotateX = 0.68,
+    this.maxRotateY = 0.38,
+    /// 朝相邻卡片靠拢的位移（越大叠压感越强）。
+    this.maxStackPull = 26.0,
+    /// 沿视轴后撤，营造「滑到下层」的深度。
+    this.maxDepth = 36.0,
+    this.minOpacity = 0.62,
+    this.perspective = 0.0018,
 
     /// 卡片有多少比例已滑出视口后才开始动效（0.33 ≈ 三分之一出屏）。
     this.overflowStartFraction = 1 / 3,
@@ -29,8 +37,11 @@ class EdgeProximityScale extends StatefulWidget {
   final double minScale;
   final double maxScale;
   final double maxRotateX;
-  final double maxTranslate;
+  final double maxRotateY;
+  final double maxStackPull;
+  final double maxDepth;
   final double minOpacity;
+  final double perspective;
   final double overflowStartFraction;
   final EdgeScaleAxis axis;
   final Duration duration;
@@ -43,8 +54,12 @@ class EdgeProximityScale extends StatefulWidget {
 class _EdgeProximityScaleState extends State<EdgeProximityScale> {
   double _scale = 1;
   double _rotateX = 0;
+  double _rotateY = 0;
+  double _translateX = 0;
   double _translateY = 0;
+  double _translateZ = 0;
   double _opacity = 1;
+  Alignment _transformAlignment = Alignment.center;
   ScrollPosition? _scrollPosition;
   bool _updateQueued = false;
 
@@ -91,17 +106,12 @@ class _EdgeProximityScaleState extends State<EdgeProximityScale> {
 
     final viewportRect = _viewportRect();
     if (viewportRect == null) {
-      _setTransform(widget.maxScale, 0, 0, 1);
+      _applyMotion(_Motion.idle(widget.maxScale));
       return;
     }
 
     final overflow = _overflowMetrics(itemRect, viewportRect);
-    _setTransform(
-      _scaleFromProgress(overflow.progress),
-      overflow.rotateX,
-      overflow.translateY,
-      _opacityFromProgress(overflow.progress),
-    );
+    _applyMotion(_motionFromOverflow(overflow));
   }
 
   Rect? _viewportRect() {
@@ -134,7 +144,7 @@ class _EdgeProximityScaleState extends State<EdgeProximityScale> {
     );
   }
 
-  ({double progress, double rotateX, double translateY}) _overflowMetrics(
+  ({double progress, _ExitEdge edge}) _overflowMetrics(
     Rect item,
     Rect viewport,
   ) {
@@ -151,51 +161,91 @@ class _EdgeProximityScaleState extends State<EdgeProximityScale> {
     final leftFrac = left / w;
     final rightFrac = right / w;
 
-    final (dominant, fromTop, fromLeft) = switch (widget.axis) {
-      EdgeScaleAxis.vertical => (
-          math.max(topFrac, bottomFrac),
-          topFrac >= bottomFrac,
-          false,
-        ),
-      EdgeScaleAxis.horizontal => (
-          math.max(leftFrac, rightFrac),
-          false,
-          leftFrac >= rightFrac,
-        ),
+    final edge = switch (widget.axis) {
+      EdgeScaleAxis.vertical => _dominantVerticalEdge(topFrac, bottomFrac),
+      EdgeScaleAxis.horizontal =>
+        _dominantHorizontalEdge(leftFrac, rightFrac),
       EdgeScaleAxis.both => () {
           final v = math.max(topFrac, bottomFrac);
           final hz = math.max(leftFrac, rightFrac);
           if (v >= hz) {
-            return (v, topFrac >= bottomFrac, false);
+            return _dominantVerticalEdge(topFrac, bottomFrac);
           }
-          return (hz, false, leftFrac >= rightFrac);
+          return _dominantHorizontalEdge(leftFrac, rightFrac);
         }(),
     };
 
-    final progress = _progressFromOverflow(dominant);
-    if (progress <= 0) {
-      return (progress: 0, rotateX: 0, translateY: 0);
+    final dominant = switch (edge) {
+      _ExitEdge.top => topFrac,
+      _ExitEdge.bottom => bottomFrac,
+      _ExitEdge.left => leftFrac,
+      _ExitEdge.right => rightFrac,
+      _ExitEdge.none => 0.0,
+    };
+
+    return (progress: _progressFromOverflow(dominant), edge: edge);
+  }
+
+  _ExitEdge _dominantVerticalEdge(double topFrac, double bottomFrac) {
+    if (topFrac <= 0 && bottomFrac <= 0) return _ExitEdge.none;
+    return topFrac >= bottomFrac ? _ExitEdge.top : _ExitEdge.bottom;
+  }
+
+  _ExitEdge _dominantHorizontalEdge(double leftFrac, double rightFrac) {
+    if (leftFrac <= 0 && rightFrac <= 0) return _ExitEdge.none;
+    return leftFrac >= rightFrac ? _ExitEdge.left : _ExitEdge.right;
+  }
+
+  _Motion _motionFromOverflow(({double progress, _ExitEdge edge}) overflow) {
+    final p = overflow.progress;
+    if (p <= 0 || overflow.edge == _ExitEdge.none) {
+      return _Motion.idle(widget.maxScale);
     }
 
-    final rotate = switch (widget.axis) {
-      EdgeScaleAxis.vertical =>
-        (fromTop ? 1.0 : -1.0) * widget.maxRotateX * progress,
-      EdgeScaleAxis.horizontal => 0.0,
-      EdgeScaleAxis.both => fromTop || !fromLeft
-          ? (fromTop ? 1.0 : -1.0) * widget.maxRotateX * progress
-          : 0.0,
-    };
+    final scale = widget.maxScale - (widget.maxScale - widget.minScale) * p;
+    final pull = widget.maxStackPull * p;
+    final depth = -widget.maxDepth * p;
+    final opacity = 1 - (1 - widget.minOpacity) * p;
 
-    final translate = switch (widget.axis) {
-      EdgeScaleAxis.vertical =>
-        (fromTop ? -1.0 : 1.0) * widget.maxTranslate * progress,
-      EdgeScaleAxis.horizontal => 0.0,
-      EdgeScaleAxis.both => fromTop || !fromLeft
-          ? (fromTop ? -1.0 : 1.0) * widget.maxTranslate * progress
-          : 0.0,
+    return switch (overflow.edge) {
+      // 向上滑出：绕底边后倾，下移叠入下方卡片下层。
+      _ExitEdge.top => _Motion(
+            scale: scale,
+            rotateX: widget.maxRotateX * p,
+            translateY: pull,
+            translateZ: depth,
+            opacity: opacity,
+            alignment: Alignment.bottomCenter,
+          ),
+      // 向下滑出：绕顶边后倾，上移叠入上方卡片下层。
+      _ExitEdge.bottom => _Motion(
+            scale: scale,
+            rotateX: -widget.maxRotateX * p,
+            translateY: -pull,
+            translateZ: depth,
+            opacity: opacity,
+            alignment: Alignment.topCenter,
+          ),
+      // 向左滑出：绕右边后倾，右移叠入右侧卡片下层。
+      _ExitEdge.left => _Motion(
+            scale: scale,
+            rotateY: widget.maxRotateY * p,
+            translateX: pull,
+            translateZ: depth,
+            opacity: opacity,
+            alignment: Alignment.centerRight,
+          ),
+      // 向右滑出：绕左边后倾，左移叠入左侧卡片下层。
+      _ExitEdge.right => _Motion(
+            scale: scale,
+            rotateY: -widget.maxRotateY * p,
+            translateX: -pull,
+            translateZ: depth,
+            opacity: opacity,
+            alignment: Alignment.centerLeft,
+          ),
+      _ExitEdge.none => _Motion.idle(widget.maxScale),
     };
-
-    return (progress: progress, rotateX: rotate, translateY: translate);
   }
 
   double _progressFromOverflow(double overflowFraction) {
@@ -208,36 +258,34 @@ class _EdgeProximityScaleState extends State<EdgeProximityScale> {
     return widget.curve.transform(t);
   }
 
-  double _scaleFromProgress(double progress) =>
-      widget.maxScale - (widget.maxScale - widget.minScale) * progress;
-
-  double _opacityFromProgress(double progress) =>
-      1 - (1 - widget.minOpacity) * progress;
-
-  void _setTransform(
-    double scale,
-    double rotateX,
-    double translateY,
-    double opacity,
-  ) {
-    if ((scale - _scale).abs() > 0.001 ||
-        (rotateX - _rotateX).abs() > 0.001 ||
-        (translateY - _translateY).abs() > 0.001 ||
-        (opacity - _opacity).abs() > 0.001) {
+  void _applyMotion(_Motion m) {
+    if ((m.scale - _scale).abs() > 0.001 ||
+        (m.rotateX - _rotateX).abs() > 0.001 ||
+        (m.rotateY - _rotateY).abs() > 0.001 ||
+        (m.translateX - _translateX).abs() > 0.001 ||
+        (m.translateY - _translateY).abs() > 0.001 ||
+        (m.translateZ - _translateZ).abs() > 0.001 ||
+        (m.opacity - _opacity).abs() > 0.001 ||
+        m.alignment != _transformAlignment) {
       setState(() {
-        _scale = scale;
-        _rotateX = rotateX;
-        _translateY = translateY;
-        _opacity = opacity;
+        _scale = m.scale;
+        _rotateX = m.rotateX;
+        _rotateY = m.rotateY;
+        _translateX = m.translateX;
+        _translateY = m.translateY;
+        _translateZ = m.translateZ;
+        _opacity = m.opacity;
+        _transformAlignment = m.alignment;
       });
     }
   }
 
   Matrix4 _buildMatrix() {
     return Matrix4.identity()
-      ..setEntry(3, 2, 0.0012)
-      ..translate(0.0, _translateY)
+      ..setEntry(3, 2, widget.perspective)
+      ..translate(_translateX, _translateY, _translateZ)
       ..rotateX(_rotateX)
+      ..rotateY(_rotateY)
       ..scale(_scale, _scale, 1.0);
   }
 
@@ -247,11 +295,44 @@ class _EdgeProximityScaleState extends State<EdgeProximityScale> {
       duration: widget.duration,
       curve: widget.curve,
       transform: _buildMatrix(),
-      transformAlignment: Alignment.center,
+      transformAlignment: _transformAlignment,
       child: Opacity(
         opacity: _opacity.clamp(0.0, 1.0),
         child: widget.child,
       ),
     );
   }
+}
+
+class _Motion {
+  const _Motion({
+    required this.scale,
+    this.rotateX = 0,
+    this.rotateY = 0,
+    this.translateX = 0,
+    this.translateY = 0,
+    this.translateZ = 0,
+    required this.opacity,
+    required this.alignment,
+  });
+
+  final double scale;
+  final double rotateX;
+  final double rotateY;
+  final double translateX;
+  final double translateY;
+  final double translateZ;
+  final double opacity;
+  final Alignment alignment;
+
+  factory _Motion.idle(double scale) => _Motion(
+        scale: scale,
+        rotateX: 0,
+        rotateY: 0,
+        translateX: 0,
+        translateY: 0,
+        translateZ: 0,
+        opacity: 1,
+        alignment: Alignment.center,
+      );
 }

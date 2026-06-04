@@ -11,6 +11,7 @@ import '../../shared/widgets/detail_scaffold.dart';
 import '../../shared/widgets/match_tile.dart';
 import '../../shared/widgets/section_title.dart';
 import '../../shared/widgets/team_badge.dart';
+import '../../shared/widgets/team_follow_button.dart';
 
 class TeamDetailPage extends ConsumerWidget {
   const TeamDetailPage({super.key, required this.teamId});
@@ -34,6 +35,7 @@ class TeamDetailPage extends ConsumerWidget {
 
     return DetailScaffold(
       title: Text(name),
+      actions: [TeamFollowButton(teamId: teamId)],
       body: DetailFixedHeaderBody(
         header: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),

@@ -19,6 +19,25 @@
 - **赛程回顶部**：赛程 Tab 列表滚过约 120px 后，第一个 Tab 变为圆圈 ↑ +「回顶部」；点击平滑滚回顶部（`scheduleScrollNavProvider` + `core/nav/schedule_scroll_nav.dart`）
 - 列表底部留白：`CapsuleNavMetrics.bottomInset(context)`，避免被胶囊遮挡
 
+## 赛程页（`/schedule`）
+
+| 项 | 说明 |
+|---|---|
+| 子 Tab | `关注` · `赛中 / 未赛` · `完赛`（`TabController` length 3） |
+| 默认子 Tab | `initialIndex: 1`（**赛中 / 未赛**），不是「关注」 |
+| 搜索 | AppBar 右上角 → `showSearch` + `ScheduleSearchDelegate`；按球队中文/英文名、FIFA 代码、名单球员名筛已确定赛程 |
+| 关注 Tab | `followedMatchesProvider`：主客队任一方为已关注 `teamId` 的 `isConfirmed` 比赛，按开赛时间排序 |
+
+## 球队关注
+
+| 项 | 说明 |
+|---|---|
+| 持久化 | `FollowedTeamsStore` → `SharedPreferences` key `followed_team_ids` |
+| Provider | `followedTeamsProvider`（Set）、`followedMatchesProvider`、`teamsGridProvider` |
+| 详情 | AppBar `TeamFollowButton`（爱心切换） |
+| 宫格 | 右上角 `TeamFollowBadge`；已关注球队 **置顶**（`core/utils/teams_grid_sort.dart`，组内保持 API 顺序） |
+| 宫格布局 | 内容层 `Positioned.fill` 居中，角标 `Positioned` 叠加，避免国旗被挤偏 |
+
 ## 详情页顶区固定
 
 用 `DetailFixedHeaderBody`（`shared/widgets/detail_fixed_header_body.dart`）：
@@ -57,9 +76,17 @@
 
 ## 列表卡片动效
 
-- `EdgeProximityScale`：约 1/3 出屏后触发 **X 轴透视倾斜**（iTunes 唱片式）+ 缩放 + 轻微位移/透明度
+- `EdgeProximityScale`（`shared/widgets/edge_proximity_scale.dart`）：约 **1/3 出屏** 后触发
+- 效果：缩小 + **绕靠近相邻卡片的一边** 倾斜（纵向 `rotateX` / 横向 `rotateY`）+ **朝邻卡叠入下层**（`maxStackPull` 靠拢 + `translateZ` 后撤），非向外推开
+- 默认强度：`maxRotateX` 0.68、`perspective` 0.0018
 - 滚动列表/宫格设 `clipBehavior: Clip.none`，避免 3D 被裁切
 - 已用于：赛程卡、积分榜/球队/场馆宫格、比赛详情 Card
+
+## 比赛详情 AppBar
+
+- **未开赛**：无 `actions`（开赛时间仅在正文卡与「赛事信息」，避免与右上角重复）
+- **进行中 / 完场**：`StatusChip(match:, showTime: false)`（芯片不重复显示开赛时间）
+- 赛程列表卡片同理：`StatusChip(showTime: false)`，时间在 VS 下方
 
 ## 遗留
 
