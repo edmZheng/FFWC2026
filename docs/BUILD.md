@@ -67,6 +67,16 @@ python scripts/generate_launcher_icons.py
 
 ## 常见问题
 
+- **Android Studio Gradle 同步：`different roots` / `generateDebugUnitTestConfig` 失败**  
+  项目在 **G:**，而默认 Pub 缓存在 **C:**（`%LOCALAPPDATA%\Pub\Cache`），AGP 无法把 `G:\...\build\shared_preferences_android` 与 `C:\...\Pub\Cache\...` 算成相对路径。  
+  **处理（推荐，一次配置）：**
+  1. 新建目录，例如 `G:\DevTools\pub-cache`。
+  2. 系统环境变量（用户级即可）：`PUB_CACHE` = `G:\DevTools\pub-cache`（必须与项目**同一盘符**）。
+  3. （可选）把原 `C:\Users\<你>\AppData\Local\Pub\Cache` 内容复制到新目录，避免重新下载。
+  4. **完全退出** Android Studio，新开终端在项目根执行：`flutter clean` → `flutter pub get`。
+  5. 再打开 `android` 或根工程，点 **Sync Project with Gradle Files**。  
+  打包脚本已默认在未设置 `PUB_CACHE` 时使用 `G:\DevTools\pub-cache`（见 `scripts/build_release.ps1`）。IDE 仍须设系统环境变量并重启 AS。  
+  **临时绕过（不稳定）：** `flutter clean` 后先只打开 `android` 做 Gradle Sync，成功后再在项目根 `flutter pub get`。
 - **Gradle 下载 `flutter_embedding_release` 失败 / TLS / 只下了 16KB**  
   检查 `GRADLE_USER_HOME` 是否为 `E:\DevTools\android-tools\.gradle`。不要对 release 随意 `flutter clean` 除非确需清缓存。
 - **终端找不到 `flutter`**  
