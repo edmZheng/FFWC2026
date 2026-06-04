@@ -1,27 +1,33 @@
-/// 2026 世界杯 16 座场馆配图（已打包进 assets；部分为定制插画）。
+/// 2026 世界杯 16 座场馆配图（已打包进 assets；均为定制插画 PNG）。
 class StadiumPhotos {
   StadiumPhotos._();
 
-  /// 使用 PNG 插画的场馆 id（其余为 Wikimedia JPG）。
-  static const _pngIds = {'1', '2', '3', '4', '6', '8', '9', '12', '13'};
+  /// 16 座场馆均为本地 PNG 定制插画。
+  static const _pngIds = {
+    '1',
+    '2',
+    '3',
+    '4',
+    '5',
+    '6',
+    '7',
+    '8',
+    '9',
+    '10',
+    '11',
+    '12',
+    '13',
+    '14',
+    '15',
+    '16',
+  };
 
   /// 本地高清图（优先展示，不依赖网络）。
   static String? assetPath(String stadiumId) {
     if (_pngIds.contains(stadiumId)) {
       return 'assets/stadiums/$stadiumId.png';
     }
-    switch (stadiumId) {
-      case '5':
-      case '7':
-      case '10':
-      case '11':
-      case '14':
-      case '15':
-      case '16':
-        return 'assets/stadiums/$stadiumId.jpg';
-      default:
-        return null;
-    }
+    return null;
   }
 
   /// 在线备用（assets 缺失时回退）。
@@ -46,7 +52,7 @@ class StadiumPhotos {
     '7':
         'https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/2019_Peach_Bowl_LSU_vs_OU_Mercedes-Benz_Stadium_exterior.jpg/1280px-2019_Peach_Bowl_LSU_vs_OU_Mercedes-Benz_Stadium_exterior.jpg',
     '8':
-        'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Hard_Rock_Stadium.png/1280px-Hard_Rock_Stadium.png',
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Hard_Rock_Stadium_2017_2.jpg/1280px-Hard_Rock_Stadium_2017_2.jpg',
     '9':
         'https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/Gillette_Stadium_Outdoor.jpg/1280px-Gillette_Stadium_Outdoor.jpg',
     '10': 'https://upload.wikimedia.org/wikipedia/commons/7/70/Lincoln_Financial_Field.jpg',

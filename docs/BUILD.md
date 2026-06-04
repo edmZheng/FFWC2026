@@ -75,6 +75,13 @@ python scripts/generate_launcher_icons.py
 
 脚本只写入各密度 `ic_launcher.png`，不含自适应 `webp`；若需自适应图标请用方式 A 或自行维护 `mipmap-anydpi-v26`。
 
+## 权限（Release Manifest）
+
+| 权限 | 用途 |
+|---|---|
+| `INTERNET` / `ACCESS_NETWORK_STATE` | 拉取 worldcup26.ir、Worker 首发 |
+| `READ_CALENDAR` / `WRITE_CALENDAR` | 比赛详情「加入日历」提醒（`device_calendar`） |
+
 ## 签名
 
 当前 `android/app/build.gradle.kts` 的 `release` 使用 **debug 签名**，便于本机安装测试。上架 Play 需自备 keystore 并改 `signingConfig`。

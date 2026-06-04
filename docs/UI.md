@@ -69,10 +69,20 @@
 | 项 | 说明 |
 |---|---|
 | 映射 | `lib/core/stadium/stadium_photos.dart` → `assetPath` / `networkUrls` |
-| 本地 PNG 插画 | id `1` 墨西哥城、`2` 瓜达拉哈拉、`3` 蒙特雷、`4` 达拉斯、`6` 堪萨斯城、`8` 迈阿密、`9` 波士顿、`12` 多伦多、`13` 温哥华 |
-| 本地 JPG | id `5` `7` `10` `11` `14` `15` `16`（Wikimedia，打包进 `assets/stadiums/`） |
+| 本地 PNG 插画 | id `1`–`16`（16 座均为定制插画，含亚特兰大 Mercedes-Benz 等） |
+| 本地 JPG | 无（网络回退仍可用 `_networkById`） |
 | 回退 | 本地缺失时用 `_networkById` 同 id 的 Wikimedia URL |
-| 换图 | 覆盖 `assets/stadiums/{id}.png` 或 `.jpg` 后 **Release 打包**；PNG 场馆须列入 `_pngIds` |
+| 换图 | 覆盖 `assets/stadiums/{id}.png` 后 **Release 打包**；id 须留在 `_pngIds`（当前 `1`–`16` 全覆盖） |
+
+## 场馆名称
+
+| 字段 | 含义 | 展示位置 |
+|---|---|---|
+| `name_en` + `ZhCn.stadiumName` | 赛事实名（如「达拉斯AT&T体育场」「休斯敦体育场」） | 列表、详情标题、赛程卡 |
+| `fifa_name` | 球场日常商用名（如 `NRG Stadium`、`MetLife Stadium`） | 详情「球场常用名」 |
+| `city_en` + `ZhCn.city` | 主办城市 | 详情副标题 |
+
+数据源：`assets/data/stadiums.json`；中文映射在 `lib/core/l10n/zh_cn.dart` 的 `_stadiums`。
 
 ## 球队关注
 
@@ -131,10 +141,19 @@
 
 ## 比赛详情 AppBar
 
-- **未开赛**：无 `actions`（开赛时间仅在正文卡与「赛事信息」，避免与右上角重复）
+- **未开赛**（且能解析开赛时间）：右上 **铃铛** → 写入系统日历（`lib/core/calendar/match_calendar_reminder.dart`，`device_calendar`）；赛事开始时刻 + **赛前 60 分钟**提醒；首次需系统日历权限
+- **未开赛**（无开赛时间）：不显示铃铛
 - **进行中 / 完场**：`StatusChip(match:, showTime: false)`（芯片不重复显示开赛时间）
-- 赛程列表卡片同理：`StatusChip(showTime: false)`，时间在 VS 下方
+- 开赛时间仍在正文卡与「赛事信息」；铃铛与 `StatusChip` 不并存
+- 赛程列表卡片：`StatusChip(showTime: false)`，时间在 VS 下方；进行中左上角蓝点（`MatchTile`）
+
+## 直播跟分
+
+- `liveScoreSyncProvider`（`MyApp` 常驻，`lib/core/live/live_score_sync.dart`）：存在 `MatchStatus.live` 时每 **30 秒** `worldCupDataProvider.refresh()`（对齐 worldcup26.ir 上游节奏；不闪 loading）
+- 更新范围：赛程卡 `MatchTile`（`ScorePill`）、比赛详情、积分榜等依赖主数据的页面
+- 无进行中比赛时不轮询；仍可下拉刷新
+- 无独立 WebSocket；比分字段来自 `/get/games` 的 `home_score` / `away_score` / `time_elapsed`
 
 ## 遗留
 
-- `features/live/live_page.dart` 与 `livePollingProvider` 仍在代码库，**未挂 Shell 路由**
+- `features/live/live_page.dart` 仍在代码库，**未挂 Shell 路由**（数据与全局跟分相同）

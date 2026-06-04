@@ -8,7 +8,9 @@
 - **积分榜**：12 个小组排名表；AppBar 右上 **官方规则**（`help_outline`）→ 2026 赛制与排名规则全文
 - **球队**：**关注**（爱心，持久化本地）；宫格已关注置顶 + 角标；详情顶栏队徽 + 小组 / FIFA 排名；**赛程**、**出战名单**（26 人，中文名 + 队长标）
 - **首发名单**：单场比赛详情页展示双方首发 + 替补 + 阵型，赛前 30-60 分钟自动出现
-- **场馆**：16 座球场详情页 + 本地预置封面（**9 座定制插画 PNG**，其余 7 座 Wikimedia JPG；映射见 `lib/core/stadium/stadium_photos.dart`）
+- **直播跟分**：有进行中比赛时全局每 30 秒刷新赛程 API，赛程卡与详情比分自动更新（需可访问 worldcup26.ir）
+- **日历提醒**：未开赛比赛详情右上铃铛，一键加入系统日历（开赛前 1 小时提醒）
+- **场馆**：16 座球场详情；赛事实名 +「球场常用名」；封面为本地定制插画 PNG（`lib/core/stadium/stadium_photos.dart`）
 - **离线优先**：网络不可用回退打包资产 JSON，App 始终可打开
 
 ## 技术栈
@@ -20,6 +22,7 @@
 | HTTP | `dio` |
 | 本地缓存 | `shared_preferences`（SWR 模式，5 分钟过期） |
 | 图片 | `cached_network_image` |
+| 系统日历 | `device_calendar`（比赛详情写入提醒） |
 | 主题 / 字体 | Mono 炭蓝亮/暗双模（H=225）+ 跟随系统；Source Sans 3 |
 | Lineups 后端代理 | Cloudflare Worker + KV 缓存（见 [cf-worker/](cf-worker/)） |
 
@@ -61,7 +64,9 @@ lib/
 │   ├── api/                                 # ApiClient + Endpoints（含 workerBaseUrl）
 │   ├── cache/                               # CacheStore（SWR）
 │   ├── l10n/zh_cn.dart                      # 球队/球场中文名映射
-│   ├── stadium/stadium_photos.dart          # 本地球场图映射
+│   ├── stadium/stadium_photos.dart          # 本地球场插画映射
+│   ├── calendar/match_calendar_reminder.dart # 系统日历 + 赛前提醒
+│   ├── live/live_score_sync.dart            # 直播跟分轮询间隔
 │   ├── constants/app_info.dart              # 显示名 FFWC2026
 │   ├── nav/schedule_scroll_nav.dart         # 赛程页 → 底栏「回顶部」状态
 │   ├── theme/                               # AppTheme + mono_palette（炭蓝双模）
@@ -88,7 +93,7 @@ assets/
 ├── data/                                    # games/teams/groups/stadiums/squads/fifa_rankings/match_id_map
 ├── icon/app_icon.png                        # 脚本生成 mipmap 用主图；AS Image Asset 可直接改 res/mipmap-*
 ├── titles/                                  # Shell 四 Tab AppBar 横幅（games / rank / teams / stadium）
-└── stadiums/                                # 16 张球场图（id 1,2,3,4,6,8,9,12,13 为 .png，其余 .jpg）
+└── stadiums/                                # 16 张球场插画（id 1–16 均为 .png）
 ```
 
 更多面向贡献者/AI 的约定与架构细节见 [AGENTS.md](AGENTS.md)。Worker 部署/换 key 见 [cf-worker/README.md](cf-worker/README.md)。

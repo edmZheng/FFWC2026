@@ -1,8 +1,7 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/calendar/match_calendar_reminder.dart';
 import '../../core/l10n/zh_cn.dart';
 import '../../core/utils/match_time.dart';
 import '../../data/models/lineup.dart';
@@ -24,28 +23,7 @@ class MatchDetailPage extends ConsumerStatefulWidget {
 }
 
 class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
-  Timer? _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _startPollingIfLive());
-  }
-
-  void _startPollingIfLive() {
-    final match = ref.read(matchByIdProvider(widget.matchId));
-    if (match?.status == MatchStatus.live) {
-      _timer = Timer.periodic(const Duration(seconds: 30), (_) {
-        ref.read(worldCupDataProvider.notifier).refresh();
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
+  bool _addingToCalendar = false;
 
   @override
   Widget build(BuildContext context) {
@@ -56,13 +34,6 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
         title: Text('比赛'),
         body: Center(child: Text('比赛信息未找到')),
       );
-    }
-
-    if (match.status == MatchStatus.live && _timer == null) {
-      _startPollingIfLive();
-    } else if (match.status != MatchStatus.live) {
-      _timer?.cancel();
-      _timer = null;
     }
 
     final tt = Theme.of(context).textTheme;
@@ -76,14 +47,42 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
             ? MatchTime.formatChineseDateTime(match.localDate!)
             : null);
 
+    final canAddCalendar = match.status == MatchStatus.notStarted &&
+        resolveKickoffLocal(
+              kickoffUtc: utc,
+              localDate: match.localDate,
+            ) !=
+            null;
+
     return DetailScaffold(
       title: Text(MatchTime.chineseStage(match.stage.label)),
-      actions: match.status == MatchStatus.notStarted
-          ? null
-          : [
-              StatusChip(match: match, showTime: false),
-              const SizedBox(width: 12),
-            ],
+      actions: [
+        if (canAddCalendar)
+          IconButton(
+            icon: _addingToCalendar
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.notifications_outlined),
+            tooltip: '添加到日历（开赛前 1 小时提醒）',
+            onPressed: _addingToCalendar
+                ? null
+                : () => _addToCalendar(
+                      context,
+                      match: match,
+                      kickoffUtc: utc,
+                      kickoffText: kickoffText,
+                      homeName: homeName,
+                      awayName: awayName,
+                    ),
+          ),
+        if (match.status != MatchStatus.notStarted) ...[
+          StatusChip(match: match, showTime: false),
+          const SizedBox(width: 12),
+        ],
+      ],
       body: ListView(
         clipBehavior: Clip.none,
         padding: const EdgeInsets.all(16),
@@ -186,6 +185,30 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
               homeName: homeName, awayName: awayName),
         ],
       ),
+    );
+  }
+
+  Future<void> _addToCalendar(
+    BuildContext context, {
+    required Match match,
+    required DateTime? kickoffUtc,
+    required String? kickoffText,
+    required String homeName,
+    required String awayName,
+  }) async {
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _addingToCalendar = true);
+    final result = await addMatchToDeviceCalendar(
+      match: match,
+      kickoffUtc: kickoffUtc,
+      homeName: homeName,
+      awayName: awayName,
+      kickoffDisplay: kickoffText ?? '',
+    );
+    if (!mounted) return;
+    setState(() => _addingToCalendar = false);
+    messenger.showSnackBar(
+      SnackBar(content: Text(calendarReminderMessage(result))),
     );
   }
 

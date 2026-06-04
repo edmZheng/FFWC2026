@@ -63,7 +63,7 @@ final _stadiumsJson = {
   'stadiums': [
     {
       'id': 's1',
-      'name_en': 'MetLife Stadium',
+      'name_en': 'New York/New Jersey Stadium',
       'name_fa': 'متلایف',
       'fifa_name': 'MetLife Stadium',
       'city_en': 'New York',
@@ -173,7 +173,8 @@ void main() {
     final match = data.matches.firstWhere((m) => m.id == 'g1');
 
     expect(match.stadium, isNotNull);
-    expect(match.stadium!.nameEn, 'MetLife Stadium');
+    expect(match.stadium!.nameEn, 'New York/New Jersey Stadium');
+    expect(match.stadium!.fifaName, 'MetLife Stadium');
   });
 
   test('finished match has correct status', () async {

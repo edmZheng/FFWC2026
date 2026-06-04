@@ -14,6 +14,7 @@ import 'features/standings/standings_page.dart';
 import 'features/standings/world_cup_rules_page.dart';
 import 'features/teams/team_detail_page.dart';
 import 'features/teams/teams_page.dart';
+import 'providers.dart';
 import 'shared/widgets/capsule_nav_bar.dart';
 
 final _rootNavKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -81,17 +82,20 @@ final router = GoRouter(
   ],
 );
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) => MaterialApp.router(
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(liveScoreSyncProvider);
+    return MaterialApp.router(
         title: AppInfo.displayName,
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
         themeMode: ThemeMode.system,
         routerConfig: router,
       );
+  }
 }
 
 /// Shell：悬浮液态玻璃胶囊底栏（样式对齐 Fundy）。

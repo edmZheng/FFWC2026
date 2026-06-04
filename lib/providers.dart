@@ -19,6 +19,7 @@ import 'data/repositories/match_id_map_repository.dart';
 import 'data/repositories/ranking_repository.dart';
 import 'data/repositories/squad_repository.dart';
 import 'data/repositories/worldcup_repository.dart';
+import 'core/live/live_score_sync.dart';
 import 'features/schedule/schedule_search_index.dart';
 
 // ─── Infrastructure ──────────────────────────────────────────────────────────
@@ -149,41 +150,50 @@ final followedMatchesProvider = Provider<AsyncValue<List<Match>>>((ref) {
   });
 });
 
-// ─── Live Polling ─────────────────────────────────────────────────────────────
+// ─── Live score sync (global) ────────────────────────────────────────────────
 
-/// Activates a 30-second polling loop when live matches exist.
-/// Cancel by calling [cancel]. Intended to be used from a StatefulWidget
-/// or a widget-scoped provider that disposes on unmount.
-final livePollingProvider =
-    AsyncNotifierProvider.autoDispose<LivePollingNotifier, List<Match>>(
-  LivePollingNotifier.new,
-);
+/// 赛会期间：存在进行中比赛时，每 [kLiveScorePollInterval] 刷新 [worldCupDataProvider]。
+/// 在 [MyApp] 中 `ref.watch` 以保持存活；赛程/详情/积分榜等页面自动跟分。
+final liveScoreSyncProvider =
+    NotifierProvider<LiveScoreSyncNotifier, void>(LiveScoreSyncNotifier.new);
 
-class LivePollingNotifier extends AutoDisposeAsyncNotifier<List<Match>> {
+class LiveScoreSyncNotifier extends Notifier<void> {
   Timer? _timer;
 
   @override
-  Future<List<Match>> build() async {
-    ref.onDispose(() => _timer?.cancel());
-    final data = await ref.watch(worldCupRepositoryProvider).load();
-    final live = data.matches.where((m) => m.status == MatchStatus.live).toList();
+  void build() {
+    ref.onDispose(_stop);
 
-    if (live.isNotEmpty) {
-      _timer = Timer.periodic(const Duration(seconds: 30), (_) => _poll());
-    }
-
-    return live;
-  }
-
-  Future<void> _poll() async {
-    final data = await ref.read(worldCupRepositoryProvider).load(forceRefresh: true);
-    // Also refresh the global data cache
-    ref.invalidate(worldCupDataProvider);
-    state = AsyncValue.data(
-      data.matches.where((m) => m.status == MatchStatus.live).toList(),
+    ref.listen<AsyncValue<WorldCupData>>(
+      worldCupDataProvider,
+      (_, next) {
+        final matches = next.valueOrNull?.matches;
+        if (matches != null && hasLiveMatches(matches)) {
+          _startIfNeeded();
+        } else {
+          _stop();
+        }
+      },
+      fireImmediately: true,
     );
   }
+
+  void _startIfNeeded() {
+    if (_timer != null) return;
+    ref.read(worldCupDataProvider.notifier).refresh();
+    _timer = Timer.periodic(kLiveScorePollInterval, (_) {
+      ref.read(worldCupDataProvider.notifier).refresh();
+    });
+  }
+
+  void _stop() {
+    _timer?.cancel();
+    _timer = null;
+  }
 }
+
+/// 未挂 Tab 的直播列表页沿用同一数据源。
+final livePollingProvider = liveMatchesProvider;
 
 // ─── Single match (for detail page) ──────────────────────────────────────────
 

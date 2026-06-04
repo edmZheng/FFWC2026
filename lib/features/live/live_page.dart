@@ -10,7 +10,7 @@ class LivePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(livePollingProvider);
+    final async = ref.watch(liveMatchesProvider);
 
     return Scaffold(
       appBar: AppBar(

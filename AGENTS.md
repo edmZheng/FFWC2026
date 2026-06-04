@@ -7,7 +7,7 @@
 
 - `main.dart` → 初始化 `SharedPreferences`，用 `sharedPreferencesProvider.overrideWithValue` 注入。
 - `app.dart` → `MaterialApp.router` + `go_router` + `ThemeMode.system`。Tab 页走 `ShellRoute`；详情页用 `parentNavigatorKey: _rootNavKey`（全屏）。
-- `providers.dart` → 全局 provider：主数据、squads、rankings、match_id_map、lineups、live polling、**关注球队**（`followed_team_ids`）、**赛程搜索索引**、**宫格球队排序**（`teamsGridProvider`）。
+- `providers.dart` → 全局 provider：主数据、squads、rankings、match_id_map、lineups、**liveScoreSync**、**关注球队**（`followed_team_ids`）、**赛程搜索索引**、**宫格球队排序**（`teamsGridProvider`）。
 - `core/` 基础设施，`data/` 模型+仓库，`features/` 按页面，`shared/widgets/` 复用组件。
 - `cf-worker/` 独立的 Cloudflare Worker 项目（**不是** Flutter 源码），代理 Highlightly lineups 并 KV 缓存 24h。
 - `scripts/` 开发期一次性脚本（Python）：build_squads / fetch_squad_meta / refine_zh / build_match_id_map 等。
@@ -94,15 +94,17 @@ python generate_launcher_icons.py  # 从 assets/icon/app_icon.png 生成 Android
 - **赛事日历**（无独立路由）：左上 `ScheduleDayStrip` + `core/utils/match_calendar.dart`；`AnimatedSize` 下推列表；高亮/「X场」随子 Tab（关注=关注场次日，赛中·未赛=未完结，完赛=已完赛）；点日按北京时间筛三 Tab。**勿** `/schedule/calendar` 全屏。
 - **离屏卡片动效**：`EdgeProximityScale` 均匀缩小（1.0→0.88，约 1/3 出屏）；列表/宫格/赛程 `TabBarView` 须 `Clip.none`；短列表不缩放。细则 [docs/UI.md](docs/UI.md) §列表卡片动效。
 - **关注球队**：Toggle 走 `followedTeamsProvider`；prefs key `followed_team_ids`（勿与 `cache_*` 混用）。宫格列表用 `teamsGridProvider`（已关注置顶），勿直接用 `teamsProvider`。
-- **StatusChip 时间**：列表/详情 `showTime: false`；未开赛详情 AppBar 无 actions。开赛时间只在卡片正文与「赛事信息」。
+- **StatusChip 时间**：列表/详情 `showTime: false`；开赛时间在卡片 VS 下方与详情「赛事信息」。
+- **日历提醒**：未开赛且可解析开赛时间 → 详情 AppBar 铃铛 → `addMatchToDeviceCalendar`（`device_calendar`，赛前 60 分钟）；Android 须 `READ/WRITE_CALENDAR`（已写在 `AndroidManifest`）。无开赛时间则不显示铃铛。
 - **宫格 + 关注角标**：球队 Card 内容 `Positioned.fill` 居中，角标单独 `Positioned`，避免国旗偏移。
 - **详情顶区**：小组/球队详情用 `DetailFixedHeaderBody`（顶区 Stack 最上层、无底线）；小组仅积分榜固定，「赛程」随滚。细则见 [docs/UI.md](docs/UI.md)。
-- **直播轮询**：`livePollingProvider` 仍保留（`live_page` 未挂 Tab）。别在普通页面常驻轮询。
+- **直播跟分**：`liveScoreSyncProvider`（`MyApp` 常驻）——存在 `MatchStatus.live` 时每 30s `worldCupDataProvider.refresh()`；赛程/积分榜/详情自动更新。`live_page` 未挂 Tab。
 - **HL_API_KEY 永远只在 Worker secret**：`wrangler secret put HL_API_KEY`，**不可**写入代码、`wrangler.toml`、git。轮换流程见 `cf-worker/README.md`。
 - **Highlightly 配额硬约束**：Free = 100 req/天，整届 WC ~300 次上游消耗。Worker KV TTL 24h 是配额保护，**不要**轻易缩短。
 - **match_id_map.json 覆盖范围**：72 场小组赛全覆盖，32 场淘汰赛是 worldcup26.ir 占位符（`Winner Group X`），未映射。淘汰赛对阵敲钉后跑 `build_match_id_map.py` 增量补。
 - **换启动图标**：改 `res/mipmap-*`（AS Image Asset）**或** 覆盖 `assets/icon/app_icon.png` 后跑 `generate_launcher_icons.py`；两条链路互斥，AS 改完勿盲目跑脚本。任一方式后须 **Release 打包 + 重装 APK**。
-- **场馆本地图**：`StadiumPhotos._pngIds` 与 `assets/stadiums/{id}.png` 一一对应；其余 id 用 `{id}.jpg`。换插画须同步 `_pngIds`，勿为同一 id 同时留 `.jpg` 与 `.png`。
+- **场馆本地图**：16 座均为 `assets/stadiums/{id}.png` 插画；`_pngIds` 覆盖 `1`–`16`。换图只覆盖 PNG，勿同 id 并存 `.jpg`。
+- **场馆显示名**：列表/标题用 `name_en`→`ZhCn.stadiumName`（赛事实名）；详情「球场常用名」用 `fifa_name`。改中文只动 `zh_cn.dart` + `stadiums.json`，勿混字段。
 
 ## 深入文档
 
