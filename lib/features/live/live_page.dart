@@ -28,6 +28,7 @@ class LivePage extends ConsumerWidget {
         ],
       ),
       body: async.when(
+        skipLoadingOnReload: true,
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(e.toString())),
         data: (matches) {
@@ -93,7 +94,7 @@ class _PulsingDotState extends State<_PulsingDot>
         height: 10,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: cs.error.withAlpha((_ctrl.value * 255).toInt()),
+          color: cs.primary.withAlpha((_ctrl.value * 255).toInt()),
         ),
       ),
     );

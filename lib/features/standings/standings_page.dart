@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/l10n/zh_cn.dart';
 import '../../data/models/group_standing.dart';
 import '../../providers.dart';
+import '../../shared/widgets/capsule_nav_bar.dart';
+import '../../shared/widgets/edge_proximity_scale.dart';
 import '../../shared/widgets/team_badge.dart';
 
 class StandingsPage extends ConsumerWidget {
@@ -14,40 +16,51 @@ class StandingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(standingsProvider);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('积分榜'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => ref.read(worldCupDataProvider.notifier).refresh(),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('积分榜')),
       body: async.when(
+        skipLoadingOnReload: true,
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(e.toString())),
         data: (standings) {
-          if (standings.isEmpty) {
-            return const Center(child: Text('暂无积分数据'));
-          }
           final sorted = [...standings]
             ..sort((a, b) => a.groupName.compareTo(b.groupName));
-          return GridView.builder(
-            padding: const EdgeInsets.all(12),
-            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 200,
-              mainAxisExtent: 200,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-            ),
-            itemCount: sorted.length,
-            itemBuilder: (_, i) {
-              final g = sorted[i];
-              return _GroupPreviewCard(
-                standing: g,
-                onTap: () => context.push('/group/${g.groupName}'),
-              );
-            },
+          return RefreshIndicator(
+            onRefresh: () => ref.read(worldCupDataProvider.notifier).refresh(),
+            child: sorted.isEmpty
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      SizedBox(
+                        height: MediaQuery.sizeOf(context).height * 0.4,
+                        child: const Center(child: Text('暂无积分数据')),
+                      ),
+                    ],
+                  )
+                : GridView.builder(
+                    clipBehavior: Clip.none,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      12,
+                      16,
+                      CapsuleNavMetrics.bottomInset(context),
+                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 200,
+                      mainAxisExtent: 200,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemCount: sorted.length,
+                    itemBuilder: (_, i) {
+                      final g = sorted[i];
+                      return _GroupPreviewCard(
+                        standing: g,
+                        onTap: () => context.push('/group/${g.groupName}'),
+                      );
+                    },
+                  ),
           );
         },
       ),
@@ -66,9 +79,10 @@ class _GroupPreviewCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final preview = standing.teams.take(4).toList();
 
-    return InkWell(
+    return EdgeProximityScale(
+      child: InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(10),
       child: Card(
         margin: EdgeInsets.zero,
         child: Padding(
@@ -79,8 +93,8 @@ class _GroupPreviewCard extends StatelessWidget {
               Text(
                 '${standing.groupName} 组',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: cs.primary,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface,
                     ),
               ),
               const SizedBox(height: 8),
@@ -98,6 +112,7 @@ class _GroupPreviewCard extends StatelessWidget {
           ),
         ),
       ),
+    ),
     );
   }
 
@@ -132,8 +147,8 @@ class _GroupPreviewCard extends StatelessWidget {
           Text(
             '${s.pts}',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
           ),
         ],

@@ -84,17 +84,25 @@ class _TeamBadgeState extends State<TeamBadge> {
     );
   }
 
-  static Widget _placeholder(double size) => Container(
-        width: size,
-        height: size * 0.67,
-        decoration: BoxDecoration(
-          color: const Color(0xFF424242),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Icon(
-          Icons.sports_soccer,
-          size: size * 0.5,
-          color: const Color(0xFFB0BEC5),
-        ),
-      );
+  static Widget _placeholder(double size) {
+    return Builder(
+      builder: (context) {
+        final cs = Theme.of(context).colorScheme;
+        return Container(
+          width: size,
+          height: size * 0.67,
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: cs.outlineVariant, width: 1),
+          ),
+          child: Icon(
+            Icons.sports_soccer,
+            size: size * 0.5,
+            color: cs.onSurfaceVariant,
+          ),
+        );
+      },
+    );
+  }
 }

@@ -26,15 +26,16 @@ class ScorePill extends StatelessWidget {
         style: (style ?? const TextStyle()).copyWith(
           fontSize: style?.fontSize ?? 22,
           fontWeight: FontWeight.bold,
-          color: cs.primary,
+          color: cs.onSurfaceVariant,
+          letterSpacing: 0.08,
         ),
       );
     }
 
     final scoreStyle = (style ?? const TextStyle()).copyWith(
       fontSize: style?.fontSize ?? 28,
-      fontWeight: FontWeight.bold,
-      color: Colors.white,
+      fontWeight: FontWeight.w600,
+      color: cs.onSurface,
     );
 
     return Row(
@@ -48,7 +49,9 @@ class ScorePill extends StatelessWidget {
             style: (style ?? const TextStyle()).copyWith(
               fontSize: style?.fontSize ?? 28,
               fontWeight: FontWeight.bold,
-              color: match.status == MatchStatus.live ? cs.primary : cs.outline,
+              color: match.status == MatchStatus.live
+                  ? cs.onSurface
+                  : cs.outline,
             ),
           ),
         ),

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/utils/match_time.dart';
 import '../../data/models/match.dart';
+import '../../providers.dart';
 
 /// Small chip showing match status: 进行中 / 完场 / 日期时间.
-class StatusChip extends StatelessWidget {
+class StatusChip extends ConsumerWidget {
   const StatusChip({
     super.key,
     required this.match,
@@ -17,8 +19,16 @@ class StatusChip extends StatelessWidget {
   final bool showTime;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
+    final utc = ref.watch(kickoffUtcByMatchIdProvider(match.id));
+    String formatKickoff() {
+      if (utc != null) return MatchTime.formatBeijing(utc);
+      if (match.localDate != null) {
+        return MatchTime.formatChineseDateTime(match.localDate!);
+      }
+      return '待定';
+    }
     return switch (match.status) {
       MatchStatus.live => _liveChip(context, cs),
       MatchStatus.finished => _chip(
@@ -30,9 +40,7 @@ class StatusChip extends StatelessWidget {
       MatchStatus.notStarted => showTime
           ? _chip(
               context,
-              label: match.localDate != null
-                  ? MatchTime.formatChineseDateTime(match.localDate!)
-                  : '待定',
+              label: formatKickoff(),
               bg: cs.surfaceContainerHighest,
               fg: cs.onSurface,
             )
@@ -41,10 +49,10 @@ class StatusChip extends StatelessWidget {
   }
 
   Widget _liveChip(BuildContext context, ColorScheme cs) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: cs.error,
-          borderRadius: BorderRadius.circular(12),
+          color: cs.primary,
+          borderRadius: BorderRadius.circular(6),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -53,17 +61,17 @@ class StatusChip extends StatelessWidget {
               width: 6,
               height: 6,
               decoration: BoxDecoration(
-                color: cs.onError,
+                color: cs.onPrimary,
                 shape: BoxShape.circle,
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 5),
             Text(
               MatchTime.chineseStatus(match.status, match.timeElapsed),
-              style: Theme.of(context)
-                  .textTheme
-                  .labelSmall
-                  ?.copyWith(color: cs.onError, fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: cs.onPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
           ],
         ),
@@ -75,14 +83,14 @@ class StatusChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(6),
         ),
         child: Text(
           label,
           style: Theme.of(context)
               .textTheme
               .labelSmall
-              ?.copyWith(color: fg, fontWeight: FontWeight.bold),
+              ?.copyWith(color: fg, fontWeight: FontWeight.w500),
         ),
       );
 }

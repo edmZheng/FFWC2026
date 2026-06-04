@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/zh_cn.dart';
 import '../../providers.dart';
+import '../../shared/widgets/capsule_nav_bar.dart';
+import '../../shared/widgets/edge_proximity_scale.dart';
 import '../../shared/widgets/stadium_cover.dart';
 
 class StadiumsPage extends ConsumerWidget {
@@ -15,24 +17,32 @@ class StadiumsPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('场馆')),
       body: async.when(
+        skipLoadingOnReload: true,
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(e.toString())),
         data: (stadiums) => GridView.builder(
-          padding: const EdgeInsets.all(12),
+          clipBehavior: Clip.none,
+          padding: EdgeInsets.fromLTRB(
+            16,
+            12,
+            16,
+            CapsuleNavMetrics.bottomInset(context),
+          ),
           gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
             maxCrossAxisExtent: 200,
             mainAxisExtent: 200,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
           ),
           itemCount: stadiums.length,
           itemBuilder: (_, i) {
             final s = stadiums[i];
             final name = ZhCn.stadiumName(s);
             final location = '${ZhCn.city(s)} · ${ZhCn.country(s)}';
-            return InkWell(
+            return EdgeProximityScale(
+              child: InkWell(
               onTap: () => context.push('/stadium/${s.id}'),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               child: Card(
                 margin: EdgeInsets.zero,
                 clipBehavior: Clip.antiAlias,
@@ -65,6 +75,7 @@ class StadiumsPage extends ConsumerWidget {
                   ],
                 ),
               ),
+            ),
             );
           },
         ),

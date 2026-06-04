@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/zh_cn.dart';
 import '../../providers.dart';
+import '../../shared/widgets/capsule_nav_bar.dart';
+import '../../shared/widgets/edge_proximity_scale.dart';
 import '../../shared/widgets/team_badge.dart';
 
 class TeamsPage extends ConsumerWidget {
@@ -15,23 +17,31 @@ class TeamsPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('球队')),
       body: async.when(
+        skipLoadingOnReload: true,
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(e.toString())),
         data: (teams) => GridView.builder(
-          padding: const EdgeInsets.all(12),
+          clipBehavior: Clip.none,
+          padding: EdgeInsets.fromLTRB(
+            16,
+            12,
+            16,
+            CapsuleNavMetrics.bottomInset(context),
+          ),
           gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
             maxCrossAxisExtent: 140,
-            mainAxisExtent: 110,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
+            mainAxisExtent: 112,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
           ),
           itemCount: teams.length,
           itemBuilder: (_, i) {
             final t = teams[i];
             final name = ZhCn.teamName(t);
-            return InkWell(
+            return EdgeProximityScale(
+              child: InkWell(
               onTap: () => context.push('/team/${t.id}'),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               child: Card(
                 margin: EdgeInsets.zero,
                 child: Column(
@@ -61,6 +71,7 @@ class TeamsPage extends ConsumerWidget {
                   ],
                 ),
               ),
+            ),
             );
           },
         ),

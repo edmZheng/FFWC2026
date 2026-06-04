@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/l10n/zh_cn.dart';
 import '../../core/utils/match_time.dart';
 import '../../data/models/match.dart';
+import '../../providers.dart';
+import '../../core/theme/mono_palette.dart';
+import 'edge_proximity_scale.dart';
 import 'score_pill.dart';
 import 'status_chip.dart';
 import 'team_badge.dart';
 
 /// 赛程卡片：轮次在 VS 上方，开赛时间在 VS 下方。
-class MatchTile extends StatelessWidget {
+class MatchTile extends ConsumerWidget {
   const MatchTile({
     super.key,
     required this.match,
@@ -18,20 +22,31 @@ class MatchTile extends StatelessWidget {
   final Match match;
   final VoidCallback? onTap;
 
-  static const double _radius = 16;
+  static const double _radius = 10;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
     final isLive = match.status == MatchStatus.live;
+    final utc = ref.watch(kickoffUtcByMatchIdProvider(match.id));
+    final kickoff = utc != null
+        ? MatchTime.formatBeijing(utc)
+        : (match.localDate != null
+            ? MatchTime.formatChineseDateTime(match.localDate!)
+            : '时间待定');
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    return EdgeProximityScale(
+      axis: EdgeScaleAxis.vertical,
+      child: Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       color: cs.surface,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(_radius),
-        side: BorderSide(color: cs.primary.withValues(alpha: 0.15)),
+        side: BorderSide(
+          color: Theme.of(context).extension<MonoTokens>()?.cardBorder ??
+              cs.outlineVariant,
+        ),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -65,9 +80,10 @@ class MatchTile extends StatelessWidget {
                               _roundLabel(),
                               textAlign: TextAlign.center,
                               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                    color: cs.primary,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 15,
+                                    color: cs.onSurfaceVariant,
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14,
+                                    letterSpacing: 0.02,
                                   ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
@@ -76,13 +92,12 @@ class MatchTile extends StatelessWidget {
                             ScorePill(match: match),
                             const SizedBox(height: 6),
                             Text(
-                              match.localDate != null
-                                  ? MatchTime.formatChineseDateTime(match.localDate!)
-                                  : '时间待定',
+                              kickoff,
                               textAlign: TextAlign.center,
                               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 15,
+                                    color: cs.onSurface,
                                   ),
                             ),
                           ],
@@ -118,7 +133,7 @@ class MatchTile extends StatelessWidget {
                   width: 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: cs.error,
+                    color: cs.primary,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -126,6 +141,7 @@ class MatchTile extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -144,11 +160,10 @@ class MatchTile extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           name,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
           textAlign: align,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,

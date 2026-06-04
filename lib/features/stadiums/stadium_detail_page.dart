@@ -6,6 +6,7 @@ import '../../core/l10n/zh_cn.dart';
 import '../../providers.dart';
 import '../../shared/widgets/detail_scaffold.dart';
 import '../../shared/widgets/match_tile.dart';
+import '../../shared/widgets/section_title.dart';
 import '../../shared/widgets/stadium_cover.dart';
 
 class StadiumDetailPage extends ConsumerWidget {
@@ -64,12 +65,7 @@ class StadiumDetailPage extends ConsumerWidget {
                     : '容量未知',
               ),
               const Divider(height: 32),
-              Text(
-                '将在此投入使用的赛场',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
+              const SectionTitle('赛程'),
               matchesAsync.when(
                 loading: () =>
                     const Center(child: CircularProgressIndicator()),

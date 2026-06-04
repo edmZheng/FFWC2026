@@ -5,11 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/l10n/zh_cn.dart';
 import '../../core/utils/match_time.dart';
+import '../../data/models/lineup.dart';
 import '../../data/models/match.dart';
 import '../../providers.dart';
 import '../../shared/widgets/detail_scaffold.dart';
+import '../../shared/widgets/edge_proximity_scale.dart';
 import '../../shared/widgets/score_pill.dart';
 import '../../shared/widgets/status_chip.dart';
+import '../../shared/widgets/section_title.dart';
 import '../../shared/widgets/team_badge.dart';
 
 class MatchDetailPage extends ConsumerStatefulWidget {
@@ -66,14 +69,23 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
     final cs = Theme.of(context).colorScheme;
     final homeName = ZhCn.matchHomeName(match);
     final awayName = ZhCn.matchAwayName(match);
+    final utc = ref.watch(kickoffUtcByMatchIdProvider(widget.matchId));
+    final kickoffText = utc != null
+        ? MatchTime.formatBeijing(utc)
+        : (match.localDate != null
+            ? MatchTime.formatChineseDateTime(match.localDate!)
+            : null);
 
     return DetailScaffold(
       title: Text(MatchTime.chineseStage(match.stage.label)),
       actions: [StatusChip(match: match), const SizedBox(width: 12)],
       body: ListView(
+        clipBehavior: Clip.none,
         padding: const EdgeInsets.all(16),
         children: [
-          Card(
+          EdgeProximityScale(
+            axis: EdgeScaleAxis.vertical,
+            child: Card(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
               child: Column(
@@ -81,17 +93,17 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
                   if (match.stage == MatchStage.group && match.group.isNotEmpty)
                     Text(
                       '${match.group}组 · 第${match.matchday}轮',
-                      style: tt.titleSmall?.copyWith(color: cs.primary),
+                      style: tt.titleSmall?.copyWith(color: cs.onSurfaceVariant),
                     )
                   else
                     Text(
                       MatchTime.chineseStage(match.stage.label),
-                      style: tt.titleSmall?.copyWith(color: cs.primary),
+                      style: tt.titleSmall?.copyWith(color: cs.onSurfaceVariant),
                     ),
-                  if (match.localDate != null) ...[
+                  if (kickoffText != null) ...[
                     const SizedBox(height: 8),
                     Text(
-                      MatchTime.formatChineseDateTime(match.localDate!),
+                      kickoffText,
                       style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                     ),
                   ],
@@ -129,6 +141,7 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
               ),
             ),
           ),
+          ),
           const SizedBox(height: 16),
           _section(context, '赛事信息', [
             if (match.stadium != null)
@@ -139,11 +152,11 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
                 subtitle:
                     '${ZhCn.city(match.stadium!)} · ${ZhCn.country(match.stadium!)}',
               ),
-            if (match.localDate != null)
+            if (kickoffText != null)
               _infoRow(
                 context,
                 Icons.schedule,
-                MatchTime.formatChineseDateTime(match.localDate!),
+                kickoffText,
               ),
             if (match.group.isNotEmpty)
               _infoRow(
@@ -164,6 +177,8 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
               ..._scorerRows(context, homeName, match.homeScorers),
               ..._scorerRows(context, awayName, match.awayScorers),
             ]),
+          _LineupSection(matchId: widget.matchId,
+              homeName: homeName, awayName: awayName),
         ],
       ),
     );
@@ -197,13 +212,8 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: Theme.of(ctx).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        const SizedBox(height: 8),
+        SectionTitle(title),
+        const SizedBox(height: 4),
         ...children,
         const SizedBox(height: 16),
       ],
@@ -242,5 +252,151 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
         ),
       ),
     ];
+  }
+}
+
+class _LineupSection extends ConsumerWidget {
+  const _LineupSection({
+    required this.matchId,
+    required this.homeName,
+    required this.awayName,
+  });
+
+  final String matchId;
+  final String homeName;
+  final String awayName;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(lineupByMatchIdProvider(matchId));
+    final tt = Theme.of(context).textTheme;
+    return async.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Center(child: SizedBox(
+          width: 24, height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        )),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (lineup) {
+        if (lineup == null || !lineup.hasAnyData) {
+          return const SizedBox.shrink();
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SectionTitle('首发名单'),
+            if (lineup.home.hasData)
+              _TeamLineupCard(team: lineup.home, label: homeName),
+            if (lineup.away.hasData) ...[
+              const SizedBox(height: 8),
+              _TeamLineupCard(team: lineup.away, label: awayName),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _TeamLineupCard extends StatelessWidget {
+  const _TeamLineupCard({required this.team, required this.label});
+
+  final TeamLineup team;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
+    final formationStr =
+        (team.formation.isNotEmpty && team.formation != 'Unknown')
+            ? '  ·  ${team.formation}'
+            : '';
+    return EdgeProximityScale(
+      axis: EdgeScaleAxis.vertical,
+      child: Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$label$formationStr',
+              style: tt.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: cs.onSurface,
+              ),
+            ),
+            const SizedBox(height: 6),
+            for (final row in team.initialLineup)
+              if (row.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Wrap(
+                    spacing: 10,
+                    runSpacing: 4,
+                    children: row
+                        .map((p) => _PlayerChip(player: p))
+                        .toList(),
+                  ),
+                ),
+            if (team.substitutes.isNotEmpty) ...[
+              const Divider(height: 16),
+              Text(
+                '替补',
+                style: tt.labelSmall?.copyWith(color: cs.outline),
+              ),
+              const SizedBox(height: 4),
+              Wrap(
+                spacing: 10,
+                runSpacing: 4,
+                children: team.substitutes
+                    .map((p) => _PlayerChip(player: p, dim: true))
+                    .toList(),
+              ),
+            ],
+          ],
+        ),
+      ),
+    ),
+    );
+  }
+}
+
+class _PlayerChip extends StatelessWidget {
+  const _PlayerChip({required this.player, this.dim = false});
+
+  final LineupPlayer player;
+  final bool dim;
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 24,
+          child: Text(
+            player.number > 0 ? '${player.number}' : '·',
+            textAlign: TextAlign.right,
+            style: tt.labelSmall?.copyWith(
+              color: dim ? cs.outline : cs.onSurface,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          player.name,
+          style: tt.bodySmall?.copyWith(
+            color: dim ? cs.outline : null,
+          ),
+        ),
+      ],
+    );
   }
 }

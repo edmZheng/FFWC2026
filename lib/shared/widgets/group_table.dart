@@ -30,7 +30,7 @@ class GroupTable extends StatelessWidget {
               '${standing.groupName} 组',
               style: tt.titleSmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: cs.primary,
+                color: cs.onSurface,
               ),
             ),
           ),
@@ -70,8 +70,8 @@ class GroupTable extends StatelessWidget {
           text,
           textAlign: TextAlign.center,
           style: tt.labelSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: cs.primary,
+            fontWeight: FontWeight.w600,
+            color: cs.onSurfaceVariant,
           ),
         ),
       );
@@ -89,9 +89,7 @@ class GroupTable extends StatelessWidget {
         : s.teamId;
     return TableRow(
       decoration: BoxDecoration(
-        color: qualifies
-            ? cs.primaryContainer.withAlpha(77)
-            : Colors.transparent,
+        color: qualifies ? cs.surfaceContainerHighest : Colors.transparent,
       ),
       children: [
         _cell('$pos', tt),
@@ -109,7 +107,7 @@ class GroupTable extends StatelessWidget {
               Expanded(
                 child: Text(
                   name,
-                  style: tt.labelSmall?.copyWith(color: Colors.white),
+                  style: tt.labelSmall,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -125,10 +123,7 @@ class GroupTable extends StatelessWidget {
         _cell(
           '${s.pts}',
           tt,
-          style: tt.labelSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          style: tt.labelSmall?.copyWith(fontWeight: FontWeight.w600),
         ),
       ],
     );
@@ -139,7 +134,7 @@ class GroupTable extends StatelessWidget {
         child: Text(
           text,
           textAlign: TextAlign.center,
-          style: style ?? tt.labelSmall?.copyWith(color: Colors.white),
+          style: style ?? tt.labelSmall,
         ),
       );
 }

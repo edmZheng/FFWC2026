@@ -35,15 +35,30 @@ class MatchTime {
     return MatchStatus.live;
   }
 
-  /// 中文开赛时间：6月11日 13:00
+  /// 北京时间常量：UTC+8，无夏令时。
+  static const Duration beijingOffset = Duration(hours: 8);
+
+  /// UTC → 北京时间 [DateTime]（naive，无 tz 信息，仅用于格式化）。
+  static DateTime toBeijing(DateTime utc) =>
+      utc.toUtc().add(beijingOffset);
+
+  /// 中文开赛时间：6月11日 13:00（按入参 [dt] 字段直接渲染，不做时区转换）。
   static String formatChineseDateTime(DateTime dt) =>
       '${dt.month}月${dt.day}日 ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+
+  /// UTC → 北京时间显示串：6月12日 03:00
+  static String formatBeijing(DateTime utc) =>
+      formatChineseDateTime(toBeijing(utc));
 
   /// Formats a [DateTime] for display: "Jun 11, 2026 13:00".
   static String formatDisplay(DateTime dt) => formatChineseDateTime(dt);
 
   /// Formats a [DateTime] to a short date: "Jun 11".
   static String formatShortDate(DateTime dt) => '${dt.month}月${dt.day}日';
+
+  /// UTC → 北京时间短日期：6月12日
+  static String formatBeijingShortDate(DateTime utc) =>
+      formatShortDate(toBeijing(utc));
 
   /// 中文状态标签
   static String chineseStatus(MatchStatus status, String timeElapsed) {

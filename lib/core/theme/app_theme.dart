@@ -1,144 +1,173 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-/// World Cup 2026 专属 Material 3 主题。
-///
-/// 强制深色风格：`light` 与 `dark` 返回同一套深海军蓝 + FIFA 金主题，
-/// 保持向后兼容。
+import 'mono_palette.dart';
+
+/// FFWC2026 — Mono-design 炭蓝主题（H=225），暗/亮双模 + 系统跟随。
 class AppTheme {
   AppTheme._();
 
-  // ── 调色板 ───────────────────────────────────────────────
-  static const Color _background = Color(0xFF0A1628); // 极深海军蓝
-  static const Color _surface = Color(0xFF132238); // 表面
-  static const Color _primary = Color(0xFFF2A900); // FIFA 金
-  static const Color _secondary = Color(0xFF1E88E5); // 蓝
-  static const Color _error = Color(0xFFE53935); // 红 / 直播
-  static const Color _surfaceVariant = Color(0xFF1E3A5F); // 容器
-  static const Color _outline = Color(0xFF4A6080); // 描边
-  static const Color _onLight = Color(0xFFFFFFFF); // 主文字
-  static const Color _onMuted = Color(0xFFB0BEC5); // 次文字
-  static const Color _onPrimary = Color(0xFF000000); // 金底黑字
+  static const _radiusCard = 10.0;
+  static const _radiusChip = 6.0;
 
-  static const ColorScheme _scheme = ColorScheme(
-    brightness: Brightness.dark,
-    primary: _primary,
-    onPrimary: _onPrimary,
-    primaryContainer: _surfaceVariant,
-    onPrimaryContainer: _onLight,
-    secondary: _secondary,
-    onSecondary: _onLight,
-    secondaryContainer: _surfaceVariant,
-    onSecondaryContainer: _onLight,
-    tertiary: _primary,
-    onTertiary: _onPrimary,
-    tertiaryContainer: _surfaceVariant,
-    onTertiaryContainer: _onLight,
-    error: _error,
-    onError: _onLight,
-    errorContainer: _error,
-    onErrorContainer: _onLight,
-    surface: _surface,
-    onSurface: _onLight,
-    surfaceContainerHighest: _surfaceVariant,
-    onSurfaceVariant: _onMuted,
-    outline: _outline,
-    outlineVariant: _surfaceVariant,
-    shadow: Color(0xFF000000),
-    scrim: Color(0xFF000000),
-    inverseSurface: _onLight,
-    onInverseSurface: _background,
-    inversePrimary: _secondary,
-    surfaceTint: _primary,
-  );
+  static ThemeData get light => _build(MonoPalette.light, Brightness.light);
+  static ThemeData get dark => _build(MonoPalette.dark, Brightness.dark);
 
-  static ThemeData get _theme => ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        colorScheme: _scheme,
-        scaffoldBackgroundColor: _background,
-        canvasColor: _background,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: _background,
-          foregroundColor: _onLight,
-          centerTitle: true,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          titleTextStyle: TextStyle(
-            color: _onLight,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-          iconTheme: IconThemeData(color: _onLight),
-        ),
-        cardTheme: CardThemeData(
-          color: _surface,
-          elevation: 4,
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        navigationBarTheme: NavigationBarThemeData(
-          backgroundColor: _background,
-          indicatorColor: _primary.withValues(alpha: 0.2),
-          elevation: 0,
-          iconTheme: WidgetStateProperty.resolveWith(
-            (states) => states.contains(WidgetState.selected)
-                ? const IconThemeData(color: _primary)
-                : const IconThemeData(color: _onMuted),
-          ),
-          labelTextStyle: WidgetStateProperty.resolveWith(
-            (states) => states.contains(WidgetState.selected)
-                ? const TextStyle(
-                    color: _primary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  )
-                : const TextStyle(color: _onMuted, fontSize: 12),
-          ),
-        ),
-        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          backgroundColor: _background,
-          selectedItemColor: _primary,
-          unselectedItemColor: _onMuted,
-          selectedIconTheme: IconThemeData(color: _primary),
-          unselectedIconTheme: IconThemeData(color: _onMuted),
-          type: BottomNavigationBarType.fixed,
-          elevation: 0,
-        ),
-        tabBarTheme: const TabBarThemeData(
-          indicatorColor: _primary,
-          labelColor: _primary,
-          unselectedLabelColor: _outline,
-        ),
-        chipTheme: ChipThemeData(
-          backgroundColor: _surfaceVariant,
-          selectedColor: _primary,
-          secondarySelectedColor: _primary,
-          labelStyle: const TextStyle(color: _onLight),
-          secondaryLabelStyle: const TextStyle(color: _onPrimary),
-          side: const BorderSide(color: _outline),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        textTheme: const TextTheme(
-          bodyLarge: TextStyle(color: _onLight),
-          bodyMedium: TextStyle(color: _onLight),
-          titleMedium: TextStyle(color: _onLight),
-          labelSmall: TextStyle(color: _onMuted),
-        ),
-        dividerTheme: const DividerThemeData(color: _surfaceVariant),
-        listTileTheme: const ListTileThemeData(
-          iconColor: _primary,
-          textColor: _onLight,
-        ),
-        iconTheme: const IconThemeData(color: _onLight),
+  static ColorScheme _scheme(MonoPaletteSet p, Brightness brightness) =>
+      ColorScheme(
+        brightness: brightness,
+        primary: p.accent,
+        onPrimary: p.onAccent,
+        primaryContainer: p.surfaceVariant,
+        onPrimaryContainer: p.onSurface,
+        secondary: p.accentDark,
+        onSecondary: p.onSecondary,
+        secondaryContainer: p.surfaceRaised,
+        onSecondaryContainer: p.onSurfaceMuted,
+        tertiary: p.accentLight,
+        onTertiary: p.onAccent,
+        tertiaryContainer: p.surfaceRaised,
+        onTertiaryContainer: p.onSurface,
+        error: p.live,
+        onError: p.onLive,
+        errorContainer: p.surfaceVariant,
+        onErrorContainer: p.onSurface,
+        surface: p.surface,
+        onSurface: p.onSurface,
+        surfaceContainerHighest: p.surfaceVariant,
+        onSurfaceVariant: p.onSurfaceMuted,
+        outline: p.outline,
+        outlineVariant: p.outlineVariant,
+        shadow: p.shadow,
+        scrim: MonoPalette.withAlpha(p.background, 0.85),
+        inverseSurface: p.onSurfaceStrong,
+        onInverseSurface: p.background,
+        inversePrimary: p.accentLight,
+        surfaceTint: p.accent,
       );
 
-  /// 浅色入口同样返回深色主题，保持向后兼容。
-  static ThemeData get light => _theme;
+  static TextTheme _textTheme(TextTheme base, MonoPaletteSet p) {
+    final sans = GoogleFonts.sourceSans3TextTheme(base);
+    return sans.copyWith(
+      displaySmall: sans.displaySmall?.copyWith(
+        letterSpacing: 0.03,
+        fontWeight: FontWeight.w600,
+        color: p.onSurfaceStrong,
+      ),
+      titleLarge: sans.titleLarge?.copyWith(
+        letterSpacing: 0.02,
+        fontWeight: FontWeight.w600,
+        color: p.onSurfaceStrong,
+      ),
+      titleMedium: sans.titleMedium?.copyWith(
+        letterSpacing: 0.015,
+        fontWeight: FontWeight.w500,
+        color: p.onSurface,
+      ),
+      titleSmall: sans.titleSmall?.copyWith(
+        fontWeight: FontWeight.w500,
+        color: p.onSurface,
+      ),
+      bodyLarge: sans.bodyLarge?.copyWith(
+        letterSpacing: -0.01,
+        fontWeight: FontWeight.w400,
+        height: 1.45,
+        color: p.onSurface,
+      ),
+      bodyMedium: sans.bodyMedium?.copyWith(
+        letterSpacing: -0.01,
+        height: 1.4,
+        color: p.onSurface,
+      ),
+      labelLarge: sans.labelLarge?.copyWith(
+        fontWeight: FontWeight.w500,
+        color: p.onSurface,
+      ),
+      labelSmall: sans.labelSmall?.copyWith(
+        fontWeight: FontWeight.w400,
+        color: p.onSurfaceMuted,
+      ),
+    );
+  }
 
-  /// 深色主题（默认）。
-  static ThemeData get dark => _theme;
+  static ThemeData _build(MonoPaletteSet p, Brightness brightness) {
+    final tokens = MonoTokens.from(p);
+    final scheme = _scheme(p, brightness);
+    final base = ThemeData(
+      useMaterial3: true,
+      brightness: brightness,
+      colorScheme: scheme,
+      scaffoldBackgroundColor: p.background,
+      canvasColor: p.background,
+      extensions: [tokens],
+    );
+    final text = _textTheme(base.textTheme, p);
+    return base.copyWith(
+      textTheme: text,
+      primaryTextTheme: _textTheme(base.primaryTextTheme, p),
+      appBarTheme: AppBarTheme(
+        backgroundColor: p.background,
+        foregroundColor: p.onSurface,
+        centerTitle: true,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        titleTextStyle: text.titleLarge,
+        iconTheme: IconThemeData(color: p.onSurface),
+      ),
+      cardTheme: CardThemeData(
+        color: p.surface,
+        elevation: 0,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(_radiusCard),
+          side: BorderSide(color: tokens.cardBorder, width: 1),
+        ),
+      ),
+      dividerTheme: DividerThemeData(
+        color: p.outlineVariant,
+        thickness: 1,
+      ),
+      tabBarTheme: TabBarThemeData(
+        indicatorColor: p.accent,
+        indicatorSize: TabBarIndicatorSize.label,
+        labelColor: p.onSurfaceStrong,
+        unselectedLabelColor: p.onSurfaceMuted,
+        labelStyle: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontSize: 13,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w400,
+          fontSize: 13,
+        ),
+        dividerColor: Colors.transparent,
+        overlayColor: WidgetStatePropertyAll(
+          MonoPalette.withAlpha(p.accentLight, 0.08),
+        ),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: p.surfaceRaised,
+        selectedColor: p.accentDark,
+        labelStyle: TextStyle(color: p.onSurface),
+        secondaryLabelStyle: TextStyle(color: p.onAccent),
+        side: BorderSide(color: p.outlineVariant),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(_radiusChip),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      ),
+      listTileTheme: ListTileThemeData(
+        iconColor: p.onSurfaceMuted,
+        textColor: p.onSurface,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      ),
+      iconTheme: IconThemeData(color: p.onSurfaceMuted),
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: p.accent,
+        linearTrackColor: p.surfaceVariant,
+      ),
+      splashColor: MonoPalette.withAlpha(p.accentLight, 0.12),
+      highlightColor: MonoPalette.withAlpha(p.accentLight, 0.06),
+    );
+  }
 }

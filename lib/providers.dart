@@ -10,6 +10,11 @@ import 'data/models/match.dart';
 import 'data/models/stadium.dart';
 import 'data/models/player.dart';
 import 'data/models/team.dart';
+import 'core/api/endpoints.dart';
+import 'data/models/lineup.dart';
+import 'data/repositories/lineup_repository.dart';
+import 'data/repositories/match_id_map_repository.dart';
+import 'data/repositories/ranking_repository.dart';
 import 'data/repositories/squad_repository.dart';
 import 'data/repositories/worldcup_repository.dart';
 
@@ -42,11 +47,15 @@ class WorldCupDataNotifier extends AsyncNotifier<WorldCupData> {
   @override
   Future<WorldCupData> build() => ref.watch(worldCupRepositoryProvider).load();
 
+  /// 下拉刷新：保持当前内容可见，后台拉取后再替换（不设 loading，避免整页闪没）。
   Future<void> refresh() async {
-    state = const AsyncValue.loading();
+    final previous = state.valueOrNull;
     state = await AsyncValue.guard(
       () => ref.read(worldCupRepositoryProvider).load(forceRefresh: true),
     );
+    if (state.hasError && previous != null) {
+      state = AsyncValue.data(previous);
+    }
   }
 }
 
@@ -141,4 +150,55 @@ final squadRepositoryProvider = Provider<SquadRepository>(
 final squadByTeamIdProvider =
     FutureProvider.family<List<Player>, String>((ref, teamId) async {
   return ref.watch(squadRepositoryProvider).forTeam(teamId);
+});
+
+// ─── FIFA Ranking (bundled asset) ─────────────────────────────────────────────
+
+final rankingRepositoryProvider = Provider<RankingRepository>(
+  (_) => RankingRepository.instance,
+);
+
+final fifaRankingsProvider = FutureProvider<
+    ({String updated, Map<String, FifaRanking> byCode})>(
+  (ref) => ref.watch(rankingRepositoryProvider).load(),
+);
+
+/// 按 FIFA 三字母代码查询排名（同步、依赖 [fifaRankingsProvider] 已加载）。
+final fifaRankByCodeProvider =
+    Provider.family<FifaRanking?, String>((ref, code) {
+  final async = ref.watch(fifaRankingsProvider);
+  final byCode = async.valueOrNull?.byCode;
+  if (byCode == null) return null;
+  return byCode[code.toUpperCase()];
+});
+
+// ─── Match ID mapping (worldcup26.ir → Highlightly) ───────────────────────────
+
+final matchIdMapRepositoryProvider = Provider<MatchIdMapRepository>(
+  (_) => MatchIdMapRepository.instance,
+);
+
+final matchIdMapProvider = FutureProvider<Map<String, MatchIdMapEntry>>(
+  (ref) => ref.watch(matchIdMapRepositoryProvider).load(),
+);
+
+/// 同步查 UTC 开赛时间（依赖 [matchIdMapProvider] 已加载）。
+final kickoffUtcByMatchIdProvider =
+    Provider.family<DateTime?, String>((ref, matchId) {
+  final async = ref.watch(matchIdMapProvider);
+  return async.valueOrNull?[matchId]?.kickoffUtc;
+});
+
+// ─── Lineups (via Cloudflare Worker proxy) ────────────────────────────────────
+
+final lineupRepositoryProvider = Provider<LineupRepository>(
+  (ref) => LineupRepository(
+    workerBaseUrl: Endpoints.workerBaseUrl,
+    idMap: ref.watch(matchIdMapRepositoryProvider),
+  ),
+);
+
+final lineupByMatchIdProvider =
+    FutureProvider.family<MatchLineup?, String>((ref, matchId) async {
+  return ref.watch(lineupRepositoryProvider).forMatch(matchId);
 });

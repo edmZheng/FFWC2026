@@ -1,71 +1,93 @@
 # worldcup_tracker
 
-2026 国际足联世界杯赛程追踪 App（Flutter）。提供赛程、实时比分、积分榜、球队与场馆信息，全中文界面，离线可用。
+2026 国际足联世界杯赛程追踪 App（Flutter）。桌面安装名 **FFWC2026**。全中文界面，离线可用，首发名单通过 Cloudflare Worker 代理获取。
 
 ## 功能
 
-- **赛程**：按阶段/小组筛选的完整比赛日程，本地时区显示
-- **直播**：进行中的比赛，存在直播时每 30 秒自动轮询刷新比分
-- **积分榜**：小组排名表
-- **球队 / 场馆**：列表 + 详情页，球队国旗来自 [flagcdn](https://flagcdn.com)
-- **离线优先**：网络不可用时回退到随 APK 打包的资产 JSON，App 始终可打开
+- **赛程**：48 队 × 104 场，按阶段 / 小组筛选；**开赛时间统一显示北京时间**（UTC+8，无 DST，不依赖手机时区）
+- **积分榜**：12 个小组排名表
+- **球队**：详情页顶栏居中展示队徽 + 小组 / FIFA 排名；下方 **赛程**、**出战名单**（26 人，GK/DF/MF/FW + 中文名 + 队长标）
+- **首发名单**：单场比赛详情页展示双方首发 + 替补 + 阵型，赛前 30-60 分钟自动出现
+- **场馆**：16 座球场详情页 + 本地预置封面图
+- **离线优先**：网络不可用回退打包资产 JSON，App 始终可打开
 
 ## 技术栈
 
 | 关注点 | 选型 |
-|--------|------|
-| 状态管理 | `flutter_riverpod` (AsyncNotifier) |
-| 路由 | `go_router`（ShellRoute + 底部导航） |
+|---|---|
+| 状态管理 | `flutter_riverpod` (AsyncNotifier + Provider.family) |
+| 路由 | `go_router`（ShellRoute + 悬浮胶囊底栏，4 Tab） |
 | HTTP | `dio` |
 | 本地缓存 | `shared_preferences`（SWR 模式，5 分钟过期） |
 | 图片 | `cached_network_image` |
-| 国际化/格式化 | `intl` |
+| 主题 / 字体 | Mono 炭蓝亮/暗双模（H=225）+ 跟随系统；Source Sans 3 |
+| Lineups 后端代理 | Cloudflare Worker + KV 缓存（见 [cf-worker/](cf-worker/)） |
 
-## 运行
+## 运行 / 构建
 
 ```bash
 flutter pub get
 flutter run
-```
-
-构建 Release APK：
-
-```bash
-flutter build apk --release
-```
-
-运行测试与静态检查：
-
-```bash
 flutter test
 flutter analyze
 ```
 
+**Release APK（本机 Windows）**：见 [docs/BUILD.md](docs/BUILD.md)。简要：
+
+```powershell
+$env:PATH = 'E:\DevTools\flutter\bin;E:\AndroidSDK\platform-tools;' + $env:PATH
+$env:ANDROID_HOME = 'E:\AndroidSDK'
+$env:GRADLE_USER_HOME = 'E:\DevTools\android-tools\.gradle'
+flutter pub get && flutter build apk --release
+```
+
+产物：`build/app/outputs/flutter-apk/app-release.apk`（约 56MB，debug 签名）。
+
 ## 数据来源
 
-- **远程 API**：`https://worldcup26.ir`，端点 `/get/games`、`/get/teams`、`/get/groups`、`/get/stadiums`（当前为无鉴权 GET）。
-- **离线回退**：`assets/data/` 下的 `games.json` / `teams.json` / `stadiums.json` / `groups.json`，反映构建时的数据状态。
-- 数据加载优先级：新鲜网络 → 过期缓存（后台刷新）→ 网络失败时回退打包资产。
+| 数据 | 来源 | 接入方式 |
+|---|---|---|
+| 赛程 / 比分 / 球队 / 球场 / 小组 | `https://worldcup26.ir`（无鉴权 GET） | `dio` 直连，SWR 缓存 |
+| 26 人大名单（球员姓名 + 中文名 + 位置） | Wikipedia 抓取后预置 | `assets/data/squads.json` |
+| FIFA 男足世界排名 | 手工维护（FIFA/Coca-Cola 月度更新） | `assets/data/fifa_rankings.json` |
+| 首发 / 替补 / 阵型 | Highlightly Soccer API（Basic Free） | Cloudflare Worker 代理 + KV 缓存 24h |
+| worldcup26 ↔ Highlightly 赛事 ID 映射 + UTC 开赛时间 | 一次性脚本拼接 | `assets/data/match_id_map.json` |
 
-> 实时比分需要可访问 `worldcup26.ir` 的网络。
+> 直连 `worldcup26.ir` 需墙外或加速。首发数据走 Worker，国内访问稳定。
 
 ## 项目结构
 
 ```
 lib/
-├── main.dart                 # 入口：初始化 SharedPreferences + ProviderScope
-├── app.dart                  # MaterialApp.router + go_router 路由 + 底部导航
-├── providers.dart            # 全局 Riverpod providers（数据、派生选择器、直播轮询）
+├── main.dart / app.dart / providers.dart    # 入口 + 路由 + 全局 provider
 ├── core/
-│   ├── api/                  # ApiClient（dio）+ Endpoints 常量
-│   ├── cache/                # CacheStore（SWR 缓存）
-│   ├── theme/                # AppTheme（Material 3 亮/暗主题）
-│   └── utils/                # coerce（容错解析）、match_time（时间格式化）
+│   ├── api/                                 # ApiClient + Endpoints（含 workerBaseUrl）
+│   ├── cache/                               # CacheStore（SWR）
+│   ├── l10n/zh_cn.dart                      # 球队/球场中文名映射
+│   ├── stadium/stadium_photos.dart          # 本地球场图映射
+│   ├── constants/app_info.dart              # 显示名 FFWC2026
+│   ├── nav/schedule_scroll_nav.dart         # 赛程页 → 底栏「回顶部」状态
+│   ├── theme/                               # AppTheme + mono_palette（炭蓝双模）
+│   └── utils/                               # coerce, match_time (Beijing TZ), flag_url
 ├── data/
-│   ├── models/               # Match / Team / Stadium / GroupStanding
-│   └── repositories/         # WorldCupRepository（取数 + 缓存 + 关联）
-├── features/                 # 按功能分页：schedule / live / standings / teams / stadiums + 详情页
-└── shared/widgets/           # MatchTile / TeamBadge / GroupTable / ScorePill / StatusChip
+│   ├── models/                              # Match / Team / Stadium / GroupStanding / Player / Lineup
+│   └── repositories/
+│       ├── worldcup_repository.dart         # 主数据（network → cache → asset）
+│       ├── squad_repository.dart            # 26 人名单（assets 离线）
+│       ├── ranking_repository.dart          # FIFA 排名（assets 离线）
+│       ├── match_id_map_repository.dart     # worldcup26 → Highlightly + UTC
+│       └── lineup_repository.dart           # Worker → Highlightly /lineups
+├── features/                                # schedule / standings / teams / stadiums / match_detail 等
+└── shared/widgets/                          # MatchTile / CapsuleNavBar / DetailFixedHeaderBody / EdgeProximityScale 等
+
+UI 约定见 [docs/UI.md](docs/UI.md)。
+
+cf-worker/                                   # Cloudflare Worker 代理（独立部署）
+scripts/                                     # 数据脚本 + build_release / generate_launcher_icons
+assets/
+├── data/                                    # games/teams/groups/stadiums/squads/fifa_rankings/match_id_map
+├── icon/app_icon.png                        # Android 启动图标主图
+└── stadiums/                                # 16 张球场图
 ```
 
-更多面向贡献者/AI 的约定与架构细节见 [AGENTS.md](AGENTS.md)。
+更多面向贡献者/AI 的约定与架构细节见 [AGENTS.md](AGENTS.md)。Worker 部署/换 key 见 [cf-worker/README.md](cf-worker/README.md)。

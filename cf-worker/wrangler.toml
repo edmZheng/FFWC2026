@@ -1,0 +1,17 @@
+name = "ffwc-proxy"
+main = "src/index.js"
+compatibility_date = "2026-05-01"
+
+# KV binding — id filled in after `wrangler kv namespace create CACHE`
+[[kv_namespaces]]
+binding = "CACHE"
+id = "94ac2e956c7f4b09acd3c5c9cec84078"
+
+# Secrets (NOT stored here, pushed via `wrangler secret put HL_API_KEY`)
+# Vars below are non-secret config only
+[vars]
+HL_BASE = "https://soccer.highlightly.net"
+WC_LEAGUE_ID = "1635"
+WC_SEASON = "2026"
+MATCHES_TTL = "300"      # 5 min: scores change live
+LINEUPS_TTL = "86400"    # 24h: lineups don't change after match
