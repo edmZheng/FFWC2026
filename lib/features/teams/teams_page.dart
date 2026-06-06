@@ -11,19 +11,41 @@ import '../../shared/widgets/edge_proximity_scale.dart';
 import '../../shared/widgets/team_badge.dart';
 import '../../shared/widgets/team_follow_button.dart';
 
-class TeamsPage extends ConsumerWidget {
+class TeamsPage extends ConsumerStatefulWidget {
   const TeamsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TeamsPage> createState() => _TeamsPageState();
+}
+
+class _TeamsPageState extends ConsumerState<TeamsPage> {
+  final _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToTop() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(0,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeOutCubic);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final async = ref.watch(teamsGridProvider);
     return Scaffold(
-      appBar: AppBar(title: const AppBarTitleImage.teams()),
+      appBar: AppBar(title: AppBarTitleImage.teams(onTap: _scrollToTop)),
       body: async.when(
         skipLoadingOnReload: true,
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(e.toString())),
         data: (teams) => GridView.builder(
+          controller: _scrollController,
           clipBehavior: Clip.none,
           padding: EdgeInsets.fromLTRB(
             16,

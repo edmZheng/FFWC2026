@@ -35,7 +35,7 @@ abstract final class MonoPalette {
     live: hsl(22, 68),
     onLive: hsl(15, 14),
     shadow: withAlpha(hsl(20, 8), 0.38),
-    glassFill: withAlpha(hsl(14, 21), 0.82),
+    glassFill: withAlpha(hsl(14, 21), 0.38),
     glassBorder: withAlpha(hsl(12, 38), 0.55),
     cardBorder: withAlpha(hsl(12, 38), 0.35),
   );
@@ -59,7 +59,7 @@ abstract final class MonoPalette {
     live: hsl(22, 68),
     onLive: hsl(15, 97),
     shadow: withAlpha(hsl(20, 20), 0.08),
-    glassFill: withAlpha(hsl(10, 88), 0.82),
+    glassFill: withAlpha(hsl(10, 88), 0.45),
     glassBorder: withAlpha(hsl(12, 75), 0.45),
     cardBorder: withAlpha(hsl(12, 75), 0.28),
   );

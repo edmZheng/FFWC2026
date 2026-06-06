@@ -1,0 +1,12 @@
+{
+  "id": "animate-early-trigger-radius",
+  "strategy": "guided-develop",
+  "title": "底部压栈动效提前触发 + 卡片圆角随 progress 增大",
+  "gate": null,
+  "currentPhase": "3",
+  "status": "in_progress",
+  "nextAction": "修改 stacked_edge_fade.dart 加 earlyTrigger + onProgressChanged，修改 match_tile.dart 加圆角动画",
+  "scope": "animate-early-trigger-radius",
+  "createdAt": "2026-06-06T00:00:00Z",
+  "branch": "main"
+}

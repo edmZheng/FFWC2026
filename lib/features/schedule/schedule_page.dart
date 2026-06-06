@@ -146,7 +146,9 @@ class _SchedulePageState extends ConsumerState<SchedulePage>
           tooltip: _uiState.calendarOpen ? '收起赛历' : '赛事日历',
           onPressed: _toggleCalendar,
         ),
-        title: const AppBarTitleImage.games(),
+        title: AppBarTitleImage.games(
+          onTap: () => _scrollToTop(_tabController.index),
+        ),
         actions: [
           IconButton(
             icon: Icon(
@@ -342,7 +344,7 @@ class _MatchList extends StatelessWidget {
               controller: scrollController,
               clipBehavior: Clip.none,
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.only(top: 8, bottom: systemBottom),
+              padding: EdgeInsets.only(top: 8, bottom: bottomPad + 8),
               itemCount: matches.length,
               itemBuilder: (_, i) => MatchTile(
                 match: matches[i],

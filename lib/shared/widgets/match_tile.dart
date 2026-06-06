@@ -11,7 +11,7 @@ import 'status_chip.dart';
 import 'team_badge.dart';
 
 /// 赛程卡片：轮次在 VS 上方，开赛时间在 VS 下方。
-class MatchTile extends StatelessWidget {
+class MatchTile extends StatefulWidget {
   const MatchTile({
     super.key,
     required this.match,
@@ -30,19 +30,38 @@ class MatchTile extends StatelessWidget {
   /// 仅 schedule_page 使用；null 时退回原 EdgeProximityScale(vertical) 行为。
   final double? bottomFadeInset;
 
-  static const double _radius = 10;
+  static const double _baseRadius = 10;
+  static const double _maxRadius = 36;
+
+  @override
+  State<MatchTile> createState() => _MatchTileState();
+}
+
+class _MatchTileState extends State<MatchTile> {
+  double _progress = 0.0;
+
+  void _onProgress(double p) {
+    if (mounted && (p - _progress).abs() > 0.001) {
+      setState(() => _progress = p);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final isLive = match.status == MatchStatus.live;
+    final isLive = widget.match.status == MatchStatus.live;
+
+    final radius = widget.bottomFadeInset != null
+        ? MatchTile._baseRadius +
+            (MatchTile._maxRadius - MatchTile._baseRadius) * _progress
+        : MatchTile._baseRadius;
 
     final card = Card(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         color: cs.surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(_radius),
+          borderRadius: BorderRadius.circular(radius),
           side: BorderSide(
             color: Theme.of(context).extension<MonoTokens>()?.cardBorder ??
                 cs.outlineVariant,
@@ -50,8 +69,8 @@ class MatchTile extends StatelessWidget {
         ),
         clipBehavior: Clip.none,
         child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(_radius),
+          onTap: widget.onTap,
+          borderRadius: BorderRadius.circular(radius),
           child: Stack(
             children: [
               Padding(
@@ -65,10 +84,10 @@ class MatchTile extends StatelessWidget {
                         Expanded(
                           child: _teamCell(
                             context,
-                            ZhCn.matchHomeName(match),
-                            match.homeTeam?.iso2 ?? '',
-                            match.homeTeam?.fifaCode ?? '',
-                            match.homeTeam?.flagUrl ?? '',
+                            ZhCn.matchHomeName(widget.match),
+                            widget.match.homeTeam?.iso2 ?? '',
+                            widget.match.homeTeam?.fifaCode ?? '',
+                            widget.match.homeTeam?.flagUrl ?? '',
                             TextAlign.center,
                           ),
                         ),
@@ -93,10 +112,10 @@ class MatchTile extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                               const SizedBox(height: 6),
-                              ScorePill(match: match),
+                              ScorePill(match: widget.match),
                               const SizedBox(height: 6),
                               Text(
-                                kickoffText,
+                                widget.kickoffText,
                                 textAlign: TextAlign.center,
                                 style: Theme.of(context)
                                     .textTheme
@@ -113,20 +132,21 @@ class MatchTile extends StatelessWidget {
                         Expanded(
                           child: _teamCell(
                             context,
-                            ZhCn.matchAwayName(match),
-                            match.awayTeam?.iso2 ?? '',
-                            match.awayTeam?.fifaCode ?? '',
-                            match.awayTeam?.flagUrl ?? '',
+                            ZhCn.matchAwayName(widget.match),
+                            widget.match.awayTeam?.iso2 ?? '',
+                            widget.match.awayTeam?.fifaCode ?? '',
+                            widget.match.awayTeam?.flagUrl ?? '',
                             TextAlign.center,
                           ),
                         ),
                       ],
                     ),
-                    if (match.status != MatchStatus.notStarted) ...[
+                    if (widget.match.status != MatchStatus.notStarted) ...[
                       const SizedBox(height: 10),
                       Align(
                         alignment: Alignment.centerRight,
-                        child: StatusChip(match: match, showTime: false),
+                        child:
+                            StatusChip(match: widget.match, showTime: false),
                       ),
                     ],
                   ],
@@ -147,13 +167,13 @@ class MatchTile extends StatelessWidget {
                 ),
             ],
           ),
-        ),
-    );
+        ));
 
-    final bottomInset = bottomFadeInset;
+    final bottomInset = widget.bottomFadeInset;
     if (bottomInset != null) {
       return StackedEdgeFade(
         bottomInset: bottomInset,
+        onProgressChanged: _onProgress,
         child: EdgeProximityScale(
           axis: EdgeScaleAxis.verticalTopOnly,
           child: card,
@@ -194,9 +214,10 @@ class MatchTile extends StatelessWidget {
   }
 
   String _roundLabel() {
-    if (match.stage == MatchStage.group && match.group.isNotEmpty) {
-      return '${match.group}组 · 第${match.matchday}轮';
+    if (widget.match.stage == MatchStage.group &&
+        widget.match.group.isNotEmpty) {
+      return '${widget.match.group}组 · 第${widget.match.matchday}轮';
     }
-    return MatchTime.chineseStage(match.stage.label);
+    return MatchTime.chineseStage(widget.match.stage.label);
   }
 }

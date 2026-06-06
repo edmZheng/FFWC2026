@@ -5,7 +5,7 @@
 
 ## 架构地图（feature-first）
 
-- `main.dart` → 初始化 `SharedPreferences`，用 `sharedPreferencesProvider.overrideWithValue` 注入。
+- `main.dart` → 初始化 `SharedPreferences`，注入 provider；首次启动（key `ffwc_launched_v1` 不存在）时 `SplashScreen(child: WelcomePage(child: MyApp()))`。视频淡出后显示 `WelcomePage`（纯黑 + 图标 + 「开始使用」按钮），点击才进 `MyApp`。**`WelcomePage` 不能用 `Scaffold`**——它在 SplashScreen Stack 中无 MaterialApp 祖先，用 `Directionality + Stack + ColoredBox`。Splash 触屏显「跳过」须外层 **`Listener(onPointerDown)`**，底层 child **`IgnorePointer`**，**勿**全屏 `onTap`。细则 [docs/UI.md](docs/UI.md) §首次启动封面 / §欢迎页。
 - `app.dart` → `MaterialApp.router` + `go_router` + `ThemeMode.system`。Tab 页走 `ShellRoute`；详情页用 `parentNavigatorKey: _rootNavKey`（全屏）。
 - `providers.dart` → 兼容导出 facade；实际 provider 按能力拆分到 `core/infra`、`core/live`、`data/repositories/**/providers.dart`、`features/**/providers.dart`。
 - `core/` 基础设施，`data/` 模型+仓库，`features/` 按页面，`shared/widgets/` 复用组件。
@@ -69,6 +69,7 @@ python generate_launcher_icons.py  # 从 assets/icon/app_icon.png 生成 Android
 | `/standings` | StandingsPage | shell |
 | `/teams` | TeamsPage | shell |
 | `/stadiums` | StadiumsPage | shell |
+| `/about` | AboutPage | shell |
 | `/match/:id` | MatchDetailPage | root（全屏） |
 | `/team/:id` | TeamDetailPage | root（全屏） |
 | `/stadium/:id` | StadiumDetailPage | root（全屏） |
@@ -88,14 +89,14 @@ python generate_launcher_icons.py  # 从 assets/icon/app_icon.png 生成 Android
 - **下拉刷新**：赛程/积分榜/球队详情用 `RefreshIndicator`；`refresh()` 禁止先置 `loading`；列表 `skipLoadingOnReload: true`。细则见 [docs/UI.md](docs/UI.md)。
 - **分段标题**：用 `SectionTitle`，球队详情为「赛程」「出战名单」。
 - **Shell 底栏**：`CapsuleNavBar` 悬浮不占位；赛程 ~120px「回顶部」；离开赛程 Tab 须 `scheduleScrollNavProvider.reset()`，回 Tab 后 `SchedulePage` 首帧/`activate` 调 `_syncScrollNav()`（勿只靠 scroll listener）。Mono 炭蓝 + `ThemeMode.system`。
-- **Shell AppBar 标题**：四 Tab 用 `AppBarTitleImage` + `assets/titles/{games,rank,teams,stadium}.png`（默认高 30）；勿改回 `Text(AppInfo.displayName)`。换图须 Release 打包。细则 [docs/UI.md](docs/UI.md) §Shell AppBar 标题图。
+- **Shell AppBar 标题**：五 Tab 用 `AppBarTitleImage` + `assets/titles/{games,rank,teams,stadium,about}.png`（默认高 30）；勿改回 `Text(AppInfo.displayName)`。换图须 Release 打包。`AppBarTitleImage` 有可选 `onTap` 回调，五 Tab 均已接入——点击标题图平滑滚回顶部（各页 `ScrollController.animateTo(0, 400ms, easeOutCubic)`；赛程页复用 `_scrollToTop(_tabController.index)`）。细则 [docs/UI.md](docs/UI.md) §Shell AppBar 标题图。
 - **无 Material 涟漪**：`AppTheme` 全局 `NoSplash.splashFactory`（`TabBar`/`IconButton`/`InkWell` 等同理）；底栏仍用 `GestureDetector`。细则 [docs/UI.md](docs/UI.md)。
 - **赛程子 Tab**：`关注 | 赛中/未赛 | 完赛`；默认 `initialIndex: 1`。搜索：`schedule_search_panel.dart` 内嵌 `AnimatedSize`，与赛历互斥，**勿** `showSearch` 全屏。
 - **赛事日历**（无独立路由）：`SchedulePage` 只编排控制器/滚动；赛历 ⇄ 搜索状态与可见比赛列表在 `features/schedule/state/schedule_page_state.dart`。左上 `ScheduleDayStrip` + `core/utils/match_calendar.dart`；`AnimatedSize` 下推列表；高亮/「X场」随子 Tab（关注=关注场次日，赛中·未赛=未完结，完赛=已完赛）；点日按北京时间筛三 Tab。**勿** `/schedule/calendar` 全屏。
-- **离屏卡片动效**：默认 `EdgeProximityScale(vertical)` 均匀缩小（1.0→0.88，约 1/3 出屏）；列表/宫格/赛程 `TabBarView` 须 `Clip.none`；短列表不缩放。**schedule 页特例**：顶部走 `EdgeProximityScale(verticalTopOnly)` 只缩；底部走 `StackedEdgeFade` 硬停 + scale + alpha 形成"压栈+残影"，触发线 = 屏幕物理底部（卡片可滑入 `CapsuleNav` blur 浮层下方）；sliver 必须用 `ZSortedListView`（反向 paint 修底部 z-order），**勿换回 `ListView.builder` / `CustomScrollView`**。`MatchTile.bottomFadeInset` 由调用方传入，null 时退回默认。细则 [docs/UI.md](docs/UI.md) §列表卡片动效。
+- **离屏卡片动效**：默认 `EdgeProximityScale(vertical)` 均匀缩小（1.0→0.88，约 1/3 出屏）；列表/宫格/赛程 `TabBarView` 须 `Clip.none`；短列表不缩放。**schedule 页特例**：顶部走 `EdgeProximityScale(verticalTopOnly)` 只缩；底部走 `StackedEdgeFade`（`earlyTrigger=40dp` 提前触发、`maxDisplaceFactor=2.5`）硬停 + scale + alpha + 圆角 10→36 形成"压栈+残影"；sliver 必须用 `ZSortedListView`（反向 paint 修底部 z-order），**勿换回 `ListView.builder` / `CustomScrollView`**；`_MatchList` padding.bottom = `CapsuleNavMetrics.bottomInset + 8` 确保末尾卡片不被 TabBar 遮挡。`MatchTile.bottomFadeInset` 由调用方传入，null 时退回默认。细则 [docs/UI.md](docs/UI.md) §列表卡片动效。
 - **关注球队**：Toggle 走 `followedTeamsProvider`；prefs key `followed_team_ids`（勿与 `cache_*` 混用）。宫格列表用 `teamsGridProvider`（已关注置顶），勿直接用 `teamsProvider`。`shared/widgets` 只收 `isFollowed/onToggle` props，不直接 watch provider。
 - **StatusChip 时间**：列表/详情 `showTime: false`；开赛时间在卡片 VS 下方与详情「赛事信息」。
-- **日历提醒**：未开赛且可解析开赛时间 → 详情 AppBar 铃铛 → `addMatchToDeviceCalendar`（`device_calendar`，赛前 60 分钟）；Android 须 `READ/WRITE_CALENDAR`（已写在 `AndroidManifest`）。无开赛时间则不显示铃铛。
+- **日历提醒**：未开赛且可解析开赛时间 → 详情 AppBar 铃铛 → `addMatchToDeviceCalendar`（`device_calendar`，赛前 60 分钟）；Android 须 `READ/WRITE_CALENDAR`（已写在 `AndroidManifest`）。无开赛时间则不显示铃铛。`_pickWritableCalendar` 两轮兜底：Pass 1 标准（`isReadOnly==false`）；Pass 2 忽略该标记——华为/荣耀设备所有日历均被错误上报为只读，Pass 2 按 default → 本地账户 → 首个有 ID 的顺序选，让实际写入决定真正可写性。
 - **宫格 + 关注角标**：球队 Card 内容 `Positioned.fill` 居中，角标单独 `Positioned`，避免国旗偏移。
 - **详情顶区**：小组/球队详情用 `DetailFixedHeaderBody`（顶区 Stack 最上层、无底线）；小组仅积分榜固定，「赛程」随滚。细则见 [docs/UI.md](docs/UI.md)。
 - **直播跟分**：`liveScoreSyncProvider`（`MyApp` 常驻）——存在 `MatchStatus.live` 时每 30s `worldCupDataProvider.refresh()`；赛程/积分榜/详情自动更新。`live_page` 未挂 Tab。

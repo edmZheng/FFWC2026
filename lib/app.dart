@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'core/constants/app_info.dart';
 import 'core/nav/schedule_scroll_nav.dart';
 import 'core/theme/app_theme.dart';
+import 'features/about/about_page.dart';
 import 'features/match_detail/match_detail_page.dart';
 import 'features/schedule/schedule_page.dart';
 import 'features/stadiums/stadium_detail_page.dart';
@@ -44,6 +45,10 @@ final router = GoRouter(
         GoRoute(
           path: '/stadiums',
           pageBuilder: (_, __) => const NoTransitionPage(child: StadiumsPage()),
+        ),
+        GoRoute(
+          path: '/about',
+          pageBuilder: (_, __) => const NoTransitionPage(child: AboutPage()),
         ),
       ],
     ),
@@ -106,6 +111,7 @@ class _ScaffoldWithNav extends ConsumerWidget {
     '/standings',
     '/teams',
     '/stadiums',
+    '/about',
   ];
 
   static const _tabs = [
@@ -113,6 +119,7 @@ class _ScaffoldWithNav extends ConsumerWidget {
     (Icons.leaderboard_outlined, Icons.leaderboard, '积分榜'),
     (Icons.groups_outlined, Icons.groups, '球队'),
     (Icons.stadium_outlined, Icons.stadium, '场馆'),
+    (Icons.info_outline, Icons.info, '关于'),
   ];
 
   @override

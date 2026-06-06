@@ -9,22 +9,42 @@ import '../../shared/widgets/capsule_nav_bar.dart';
 import '../../shared/widgets/edge_proximity_scale.dart';
 import '../../shared/widgets/stadium_cover.dart';
 
-class StadiumsPage extends ConsumerWidget {
+class StadiumsPage extends ConsumerStatefulWidget {
   const StadiumsPage({super.key});
 
-  /// 与主题卡片圆角、宫格 InkWell 一致。
+  @override
+  ConsumerState<StadiumsPage> createState() => _StadiumsPageState();
+}
+
+class _StadiumsPageState extends ConsumerState<StadiumsPage> {
   static const _gridCardRadius = 10.0;
+  final _scrollController = ScrollController();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToTop() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(0,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeOutCubic);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final async = ref.watch(stadiumsProvider);
     return Scaffold(
-      appBar: AppBar(title: const AppBarTitleImage.stadium()),
+      appBar: AppBar(title: AppBarTitleImage.stadium(onTap: _scrollToTop)),
       body: async.when(
         skipLoadingOnReload: true,
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(e.toString())),
         data: (stadiums) => GridView.builder(
+          controller: _scrollController,
           clipBehavior: Clip.none,
           padding: EdgeInsets.fromLTRB(
             16,

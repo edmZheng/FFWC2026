@@ -11,17 +11,23 @@ class StackedEdgeFade extends StatefulWidget {
     super.key,
     required this.child,
     this.bottomInset = 0,
+    this.earlyTrigger = 40.0,
     this.minScale = 0.75,
     this.maxScale = 1.0,
-    this.maxDisplaceFactor = 1.5,
+    this.maxDisplaceFactor = 2.5,
     this.alphaPointerCutoff = 0.5,
     this.curve = Curves.linear,
+    this.onProgressChanged,
   });
 
   final Widget child;
 
   /// viewport 底部不应有卡片显示的留白高度（默认 0 = 贴屏幕物理底部触发）。
   final double bottomInset;
+
+  /// 动效提前触发距离（dp）：卡片底部距 contentBottom 还有此距离时即开始
+  /// 缩放/淡化，但 clamp（硬停）仍在卡片底部越过 contentBottom 时才生效。
+  final double earlyTrigger;
 
   final double minScale;
   final double maxScale;
@@ -34,6 +40,9 @@ class StackedEdgeFade extends StatefulWidget {
   final double alphaPointerCutoff;
 
   final Curve curve;
+
+  /// progress（0→1）变化时的回调；可用于联动外部 UI（如圆角动画）。
+  final ValueChanged<double>? onProgressChanged;
 
   @override
   State<StackedEdgeFade> createState() => _StackedEdgeFadeState();
@@ -143,10 +152,14 @@ class _StackedEdgeFadeState extends State<StackedEdgeFade> {
     double newTranslate = 0;
     double virtualDisplace = 0;
 
-    if (idealBottom > contentBottom) {
-      // 底部边缘：卡片正向下离开，clamp 下沿到 contentBottom。
-      newTranslate = contentBottom - idealBottom; // 负值
-      virtualDisplace = -newTranslate;
+    // earlyBoundary：动效提前触发线，卡片底部越过此线即开始缩放/淡化。
+    // clamp（硬停）仍在越过 contentBottom 时才生效，避免卡片悬空。
+    final earlyBoundary = contentBottom - widget.earlyTrigger;
+    if (idealBottom > earlyBoundary) {
+      virtualDisplace = idealBottom - earlyBoundary;
+      if (idealBottom > contentBottom) {
+        newTranslate = contentBottom - idealBottom; // 负值，硬停
+      }
     }
     // 顶部边缘不处理：由外层 EdgeProximityScale(verticalTopOnly) 负责缩放。
 
@@ -167,6 +180,7 @@ class _StackedEdgeFadeState extends State<StackedEdgeFade> {
       _translateY = translateY;
       _progress = progress;
     });
+    widget.onProgressChanged?.call(progress);
   }
 
   @override

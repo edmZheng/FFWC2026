@@ -10,15 +10,36 @@ import '../../shared/widgets/capsule_nav_bar.dart';
 import '../../shared/widgets/edge_proximity_scale.dart';
 import '../../shared/widgets/team_badge.dart';
 
-class StandingsPage extends ConsumerWidget {
+class StandingsPage extends ConsumerStatefulWidget {
   const StandingsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<StandingsPage> createState() => _StandingsPageState();
+}
+
+class _StandingsPageState extends ConsumerState<StandingsPage> {
+  final _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToTop() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(0,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeOutCubic);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final async = ref.watch(standingsProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const AppBarTitleImage.rank(),
+        title: AppBarTitleImage.rank(onTap: _scrollToTop),
         actions: [
           IconButton(
             icon: const Icon(Icons.help_outline),
@@ -38,6 +59,7 @@ class StandingsPage extends ConsumerWidget {
             onRefresh: () => ref.read(worldCupDataProvider.notifier).refresh(),
             child: sorted.isEmpty
                 ? ListView(
+                    controller: _scrollController,
                     physics: const AlwaysScrollableScrollPhysics(),
                     children: [
                       SizedBox(
@@ -47,6 +69,7 @@ class StandingsPage extends ConsumerWidget {
                     ],
                   )
                 : GridView.builder(
+                    controller: _scrollController,
                     clipBehavior: Clip.none,
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: EdgeInsets.fromLTRB(

@@ -1,4 +1,4 @@
-# worldcup_tracker
+# FFWC2026-随手浏览实时世界杯赛程、积分榜信息
 
 2026 国际足联世界杯赛程追踪 App（Flutter）。桌面安装名 **FFWC2026**。全中文界面，离线可用，首发名单通过 Cloudflare Worker 代理获取。
 
@@ -12,13 +12,14 @@
 - **日历提醒**：未开赛比赛详情右上铃铛，一键加入系统日历（开赛前 1 小时提醒）
 - **场馆**：16 座宫格 + 详情；中文赛事实名（`ZhCn` 按场馆 id 映射）+ 详情「球场常用名」；宫格封面 PNG 插画 + 底部中文条遮盖图上英文名（`StadiumCover` / `stadium_photos.dart`）
 - **离线优先**：网络不可用回退打包资产 JSON，App 始终可打开
+- **首次启动**：封面视频（触屏浮现「跳过」）→ 欢迎页「开始使用」→ 主界面（仅 key `ffwc_launched_v1` 首次写入前；验证须清除应用数据或卸载重装）
 
 ## 技术栈
 
 | 关注点 | 选型 |
 |---|---|
 | 状态管理 | `flutter_riverpod` (AsyncNotifier + Provider.family) |
-| 路由 | `go_router`（ShellRoute + 悬浮胶囊底栏，4 Tab） |
+| 路由 | `go_router`（ShellRoute + 悬浮胶囊底栏，5 Tab） |
 | HTTP | `dio` |
 | 本地缓存 | `shared_preferences`（SWR 模式，5 分钟过期） |
 | 图片 | `cached_network_image` |
@@ -41,7 +42,7 @@ flutter analyze
 .\scripts\build_release.ps1
 ```
 
-产物：`build/app/outputs/flutter-apk/app-release.apk`（约 57MB，debug 签名）。换启动图标后须重装 APK（必要时先卸载旧版）。
+产物：`build/app/outputs/flutter-apk/app-release.apk`（约 60MB，debug 签名）。换启动图标后须重装 APK（必要时先卸载旧版）。
 
 ## 数据来源
 
@@ -89,7 +90,8 @@ lib/
 ├── features/
 │   ├── schedule/                            # schedule_page / day_strip / search_panel / search_index / providers
 │   │   └── state/                           # 赛程页 UI state + visible matches view model
-│   └── …                                    # standings（含 world_cup_rules_page）/ teams / stadiums / match_detail
+│   ├── splash/                              # SplashScreen + WelcomePage（首次启动）
+│   └── …                                    # standings（含 world_cup_rules_page）/ teams / stadiums / about / match_detail
 └── shared/widgets/                          # AppBarTitleImage / MatchTile / CapsuleNavBar / EdgeProximityScale 等
 
 UI 约定见 [docs/UI.md](docs/UI.md)。
@@ -99,8 +101,9 @@ scripts/                                     # 数据脚本 + build_release / ge
 assets/
 ├── data/                                    # games/teams/groups/stadiums/squads/fifa_rankings/match_id_map
 ├── icon/app_icon.png                        # 脚本生成 mipmap 用主图；AS Image Asset 可直接改 res/mipmap-*
-├── titles/                                  # Shell 四 Tab AppBar 横幅（games / rank / teams / stadium）
-└── stadiums/                                # 16 张球场插画（id 1–16 均为 .png）
+├── titles/                                  # Shell 五 Tab AppBar 横幅（games / rank / teams / stadium / about）
+├── stadiums/                                # 16 张球场插画（id 1–16 均为 .png）
+└── videos/cover.mp4                         # 首次启动封面视频
 ```
 
 更多面向贡献者/AI 的约定与架构细节见 [AGENTS.md](AGENTS.md)。Worker 部署/换 key 见 [cf-worker/README.md](cf-worker/README.md)。

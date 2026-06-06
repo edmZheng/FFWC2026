@@ -1,0 +1,12 @@
+{
+  "id": "evaluate-harmonyos-native-port",
+  "title": "评估 Flutter 项目转华为纯血鸿蒙系统 APP 的难度",
+  "status": "in_progress",
+  "strategy": "deep-research",
+  "currentPhase": "1",
+  "nextAction": "读取 deep-research 策略并执行项目迁移评估",
+  "gate": null,
+  "branch": "main",
+  "scope": "evaluate-harmonyos-native-port",
+  "createdAt": "2026-06-06T00:00:00.000Z"
+}

@@ -67,7 +67,9 @@ class CapsuleNavBar extends StatelessWidget {
               borderRadius: BorderRadius.circular(32),
               border: Border.all(color: mono.glassBorder, width: 1),
             ),
-            child: Row(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
               children: List.generate(tabs.length, (i) {
                 final selected = selectedIndex == i;
                 final color = selected ? activeColor : inactiveColor;
@@ -120,6 +122,7 @@ class CapsuleNavBar extends StatelessWidget {
                   ),
                 );
               }),
+            ),
             ),
           ),
         ),

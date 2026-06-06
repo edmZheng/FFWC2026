@@ -171,6 +171,7 @@ Future<MatchCalendarReminderResult> addMatchToDeviceCalendar({
 }
 
 Calendar? _pickWritableCalendar(List<Calendar> calendars) {
+  // Pass 1: standard path — prefer default writable calendar
   Calendar? fallback;
   for (final c in calendars) {
     if (c.isReadOnly == true) continue;
@@ -178,7 +179,33 @@ Calendar? _pickWritableCalendar(List<Calendar> calendars) {
     if (c.isDefault == true) return c;
     fallback ??= c;
   }
-  return fallback;
+  if (fallback != null) return fallback;
+
+  // Pass 2: some Chinese devices (e.g. Honor/Huawei) incorrectly report all
+  // calendars as read-only. Fall back to any calendar with a valid ID and let
+  // the actual write attempt reveal whether it truly is read-only.
+  final candidates =
+      calendars.where((c) => c.id != null && c.id!.isNotEmpty).toList();
+  if (candidates.isEmpty) return null;
+
+  // Prefer the default calendar even if flagged read-only
+  for (final c in candidates) {
+    if (c.isDefault == true) return c;
+  }
+
+  // Prefer local/phone account (common on EMUI / MagicOS)
+  for (final c in candidates) {
+    final name = (c.accountName ?? '').toLowerCase();
+    if (name.contains('local') ||
+        name.contains('phone') ||
+        name.contains('手机') ||
+        name.contains('huawei') ||
+        name.contains('honor')) {
+      return c;
+    }
+  }
+
+  return candidates.first;
 }
 
 String calendarReminderMessage(MatchCalendarReminderResult result) =>
@@ -188,5 +215,5 @@ String calendarReminderMessage(MatchCalendarReminderResult result) =>
       MatchCalendarReminderResult.alreadyStarted => '比赛已开始或已结束',
       MatchCalendarReminderResult.permissionDenied => '需要日历权限才能添加提醒',
       MatchCalendarReminderResult.noWritableCalendar => '未找到可写入的日历账户',
-      MatchCalendarReminderResult.failed => '添加日历失败，请稍后重试',
+      MatchCalendarReminderResult.failed => '添加日历失败，请确认系统日历应用已开启并有本地账户',
     };

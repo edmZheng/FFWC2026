@@ -1,6 +1,36 @@
 # UI 约定
 
-面向贡献者与接手开发者的界面规范（与代码同步，2026-06-04）。
+面向贡献者与接手开发者的界面规范（与代码同步，2026-06-06）。
+
+## 首次启动封面（SplashScreen）
+
+`lib/features/splash/splash_screen.dart`，仅在 `main.dart` 判断首次启动（SharedPreferences key `ffwc_launched_v1` 不存在）时挂载。
+
+| 项 | 说明 |
+|---|---|
+| 视频 | `assets/videos/cover.mp4`，`VideoPlayer`，`BoxFit.cover` 全屏 |
+| 结束时机 | 视频播放停止且剩余 ≤ 300ms 时触发；备用 timer = 视频时长 + 800ms（时长未知则 15s 上限） |
+| 淡出 | 停在最后一帧，700ms `easeInOut` 淡出 → 主界面 |
+| 卡死保护 | 每秒轮询 position；连续 2 秒无变化视为卡住，立即触发淡出 |
+| 初始化失败 | `initialize()` 超时 8s 或抛异常 → 直接跳过，`_splashDone = true` |
+| **跳过按钮** | 任意触屏按下 → 右上角「跳过」毛玻璃胶囊（250ms 淡入）；3 秒无操作淡出；再次触屏重置计时；点「跳过」立即触发视频淡出。外层 `Listener(onPointerDown)` + `HitTestBehavior.translucent` 包住 `Stack`；底层 `IgnorePointer(child: WelcomePage)`；视频层 `IgnorePointer`。淡入在 `addPostFrameCallback` 后 `_skipFade.forward(from: 0)` |
+| **⚠️ 禁忌（跳过触屏）** | **勿**用全屏 `GestureDetector(onTap)`（触屏轻移时手势常不识别）；**勿**把触屏层包进 `Opacity`/`FadeTransition`（Android hit-test 断裂） |
+
+## 欢迎页（WelcomePage）
+
+`lib/features/splash/welcome_page.dart`，视频淡出后自动展示，点击「开始使用」才进主界面。
+
+| 项 | 说明 |
+|---|---|
+| 触发时机 | `SplashScreen._splashDone = true`（视频 fade 完成）后由 `build()` 返回 `widget.child`（即 WelcomePage） |
+| 背景 | 纯黑（`ColoredBox(Colors.black)`） |
+| 图标 | `assets/icon/welcome_icon.png`，120×120，`BoxShape.circle` + `BoxShadow(Colors.white54, blur=48, spread=12)` 白色发光阴影 |
+| 标题 | `FFWC2026`，白色，30px bold，letterSpacing=2 |
+| 副标题 | `一手掌握世界杯赛程信息`，`Colors.white60`，15px |
+| 按钮 | 白底黑字「开始使用」，`GestureDetector + Container`，200×48，圆角 24 |
+| 淡入 | initState 立即 `_fade.forward()`，600ms `easeIn`；视频播完前已到 1.0，视觉无感知 |
+| 退出 | 点击按钮 → `_fade.reverse()`（600ms）→ `setState(_done = true)` → 返回 `widget.child`（`MyApp`） |
+| **⚠️ 禁忌** | **不能用 `Scaffold` / `ElevatedButton`**：WelcomePage 在 SplashScreen Stack 底层渲染时无 MaterialApp 祖先，Scaffold 会拿不到 Material context 渲染为灰色。必须用 `Directionality + Stack + ColoredBox`，按钮用 `GestureDetector + Container` |
 
 ## 交互反馈
 
@@ -25,17 +55,19 @@
 | 积分榜 | `.rank()` | `assets/titles/rank.png` | 积分榜 |
 | 球队 | `.teams()` | `assets/titles/teams.png` | 球队 |
 | 场馆 | `.stadium()` | `assets/titles/stadium.png` | 场馆 |
+| 关于 | `.about()` | `assets/titles/about.png` | 关于 |
 
 - 默认显示高度 **30** 逻辑像素，`BoxFit.contain`，`centerTitle: true`。
 - 换图：覆盖对应 PNG 后 **Release 打包**（`pubspec` 注册 `assets/titles/` 目录）。
-- 详情页 AppBar 仍为 `Text`（队名、小组名等）；仅 Shell 四 Tab 用横幅。
+- 详情页 AppBar 仍为 `Text`（队名、小组名等）；仅 Shell 五 Tab 用横幅。
+- **点击标题图回顶部**：`AppBarTitleImage` 有可选 `onTap` 参数（`GestureDetector` 包裹）。五 Tab 均已接入：积分榜/球队/场馆各自持有 `ScrollController`（已转为 `ConsumerStatefulWidget`）；关于页持有 `ScrollController`（已转为 `StatefulWidget`）；赛程页调用现有 `_scrollToTop(_tabController.index)`。新增 Tab 须一并接入 `onTap`。
 
 ## Shell 导航
 
-- **4 Tab**：赛程 / 积分榜 / 球队 / 场馆（无直播 Tab）
+- **5 Tab**：赛程 / 积分榜 / 球队 / 场馆 / 关于（无直播 Tab）
 - **底栏**：`CapsuleNavBar` 液态玻璃胶囊，悬浮于内容之上（`Stack`），不占底部横条
 - **点击**：`GestureDetector`，无涟漪/高亮，仅切换选中态（与下文全应用 `NoSplash` 一致）
-- **赛程回顶部**：列表滚过约 120px 后，赛程 Tab 显示 ↑ +「回顶部」；点击平滑滚顶（`scheduleScrollNavProvider`，`core/nav/schedule_scroll_nav.dart`）。**离开赛程 Shell Tab** 时 `app.dart` 调用 `reset()`；回到赛程后 `SchedulePage` 在 `initState` / `activate` 首帧执行 `_syncScrollNav()`，避免列表已在顶部仍残留「回顶部」
+- **回顶部（双入口）**：① 赛程 Tab 专属——列表滚过约 120px 后底栏出现 ↑「回顶部」，点击平滑滚顶（`scheduleScrollNavProvider`）；离开赛程 Tab 时 `app.dart` 调 `reset()`，回来后 `SchedulePage` 在 `initState`/`activate` 首帧执行 `_syncScrollNav()`。② 所有 Tab 通用——点击 AppBar 标题图触发 `onTap`，平滑滚回顶部（400ms / `easeOutCubic`）
 - 列表底部留白：`CapsuleNavMetrics.bottomInset(context)`，避免被胶囊遮挡
 
 ## 赛程页（`/schedule`）
@@ -62,7 +94,7 @@
 | 列表 | 12 组宫格预览，点进 `/group/:name` |
 | 刷新 | `RefreshIndicator` 下拉刷新（无 AppBar 刷新按钮） |
 | 官方规则 | AppBar 右上 `Icons.help_outline` → `context.push('/standings/rules')` |
-| 规则页 | `WorldCupRulesPage`（`DetailScaffold` + 可滚动正文）；内容依据 FIFA 公布赛制整理，非应用内排序算法说明 |
+| 规则页 | `WorldCupRulesPage`（`DetailScaffold`，AppBar 标题「规则须知」）；顶部玻璃卡片 header（APP 图标 + "2026年美加墨世界杯 / 规则须知"）；各章节用 `_SectionLabel` + `_RuleCard` 卡片排版，与关于页视觉统一；内容依据 FIFA 公布赛制整理 |
 
 ## 场馆配图
 
@@ -160,9 +192,9 @@
 | 边 | 组件 | 行为 |
 |---|---|---|
 | 顶部 | `EdgeProximityScale(verticalTopOnly)` | 卡片正常滑出 viewport，按出屏比例缩到 0.88，无 alpha、无位置 clamp |
-| 底部 | `StackedEdgeFade`（`shared/widgets/stacked_edge_fade.dart`） | 卡片下沿触及 `viewport.bottom - bottomInset` 时**硬停**（`Transform.translate` clamp），同时 scale 1.0→0.75、alpha 1.0→0.0；累计"虚拟位移" = `卡片高度 × 1.5` 时完全淡尽（形成"残影"）。alpha < 0.5 时 `IgnorePointer` 防误触；`scrollPosition.pixels < 0`（下拉刷新 overscroll）时不 clamp。曲线 Linear |
+| 底部 | `StackedEdgeFade`（`shared/widgets/stacked_edge_fade.dart`） | 卡片下沿距 `contentBottom` 还有 **40dp**（`earlyTrigger`）时开始触发，scale 1.0→0.75、alpha 1.0→0.0、圆角 10→36 同步变化；卡片下沿越过 `contentBottom` 时开始**硬停**（`Transform.translate` clamp）；累计"虚拟位移" = `卡片高度 × 2.5` 时完全淡尽（形成"残影"）。alpha < 0.5 时 `IgnorePointer` 防误触；`scrollPosition.pixels < 0`（下拉刷新 overscroll）时不 clamp。曲线 Linear |
 
-底部边缘**位置 = 屏幕物理底部**（`MediaQuery.paddingOf.bottom`，仅避开手势区），不是 `CapsuleNav` 上方。`SchedulePage._MatchList` 的 sliver `padding.bottom` 同步设为 `systemBottom`，卡片可滑入 `CapsuleNav`（液态玻璃 `BackdropFilter(blur:24)` 浮层）下方，透过模糊可见。
+底部边缘**触发线**（`contentBottom`）= 屏幕物理底部（`MediaQuery.paddingOf.bottom`，仅避开手势区），不是 `CapsuleNav` 上方——卡片仍可滑入 `CapsuleNav` blur 浮层下方。`SchedulePage._MatchList` 的 sliver `padding.bottom` = `CapsuleNavMetrics.bottomInset + 8`，确保末尾卡片可完整滚出 TabBar 遮挡范围。
 
 ### z-order：底部用反向 paint 的自定义 sliver
 
