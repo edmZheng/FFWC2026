@@ -7,17 +7,16 @@
 
 - `main.dart` → 初始化 `SharedPreferences`，用 `sharedPreferencesProvider.overrideWithValue` 注入。
 - `app.dart` → `MaterialApp.router` + `go_router` + `ThemeMode.system`。Tab 页走 `ShellRoute`；详情页用 `parentNavigatorKey: _rootNavKey`（全屏）。
-- `providers.dart` → 全局 provider：主数据、squads、rankings、match_id_map、lineups、**liveScoreSync**、**关注球队**（`followed_team_ids`）、**赛程搜索索引**、**宫格球队排序**（`teamsGridProvider`）。
+- `providers.dart` → 兼容导出 facade；实际 provider 按能力拆分到 `core/infra`、`core/live`、`data/repositories/**/providers.dart`、`features/**/providers.dart`。
 - `core/` 基础设施，`data/` 模型+仓库，`features/` 按页面，`shared/widgets/` 复用组件。
 - `cf-worker/` 独立的 Cloudflare Worker 项目（**不是** Flutter 源码），代理 Highlightly lineups 并 KV 缓存 24h。
 - `scripts/` 开发期一次性脚本（Python）：build_squads / fetch_squad_meta / refine_zh / build_match_id_map 等。
 
 ## 数据流（改取数逻辑前必读）
 
-**主数据**（赛程/球队/场馆/小组）— `WorldCupRepository.load()` 优先级：
-1. 新鲜缓存（< 5 min）→ 直接返回
-2. 过期缓存 → 立即返回旧数据 + 后台刷新（SWR）
-3. 无缓存且网络失败 → 回退 `assets/data/*.json`
+**主数据**（赛程/球队/场馆/小组）— `WorldCupRepository.load()` facade 保持原契约，内部委托：
+- `WorldCupDataPolicy`：新鲜缓存（< 5 min）→ 直接返回；过期缓存 → 立即返回旧数据 + 后台刷新（SWR）；无缓存且网络失败 → 回退 `assets/data/*.json`
+- `WorldCupDataAssembler`：raw JSON → `WorldCupData` read model（team/stadium/standings join + 排序）
 
 - API：`Endpoints.baseUrl = https://worldcup26.ir`，端点 `/get/{games,teams,groups,stadiums}`。无鉴权 GET。
 - 缓存：`CacheStore` (`shared_preferences`)，`_staleSecs = 300`，key 前缀 `cache_data_` / `cache_ts_`。
@@ -28,6 +27,7 @@
 - `match_id_map.json` → `MatchIdMapRepository`：worldcup26.ir id → `{hl: int, utc: DateTime}`，**仅 group stage 72 场覆盖**，淘汰赛敲钉后用 `scripts/build_match_id_map.py` 重建
 
 **Lineups**（外部 API，走代理）：
+- Flutter `LineupMapper`：worldcup26 match id → Highlightly id；`LineupClient`：只负责 Worker HTTP；`LineupRepository`：折叠为现有 `forMatch()` 兼容 API，并保留显式 lookup result
 - Flutter → `https://ffwc-proxy.randomdre13.workers.dev/lineups/{highlightlyId}` → Worker KV 查 → 命中返回 / 未命中转发到 Highlightly + 写 KV 24h
 - 同一场比赛任意数量用户访问，上游只算 1 次（24h 内）。Highlightly Free = 100 req/天，赛事全程理论上游 < 300 次
 
@@ -80,7 +80,7 @@ python generate_launcher_icons.py  # 从 assets/icon/app_icon.png 生成 Android
 ## 约定与红线
 
 - **UI 文案一律中文**（面向中文用户）。新增/改 UI 字符串保持中文。
-- **比赛时间显示用北京时间**（UTC+8 硬编码，**不**走 `DateTime.toLocal()`）。优先用 `kickoffUtcByMatchIdProvider` 取 UTC + `MatchTime.formatBeijing`；映射缺失才回退 `match.localDate`（场馆本地时间）。
+- **比赛时间显示用北京时间**（UTC+8 硬编码，**不**走 `DateTime.toLocal()`）。用 `KickoffTimeResolver` 统一 display / 赛历 / 排序 / 设备日历；底层优先 `kickoffUtcByMatchIdProvider` + `MatchTime.formatBeijing`，映射缺失才回退 `match.localDate`（场馆本地时间）。
 - **球员中文名**：`squads.json` 已预处理为简体大陆约定俗成译名。新增球员先查 `scripts/zh_overrides.py` 字典是否覆盖；港台音译（朗拿度、卡斯米路等）必须在 override 里替换。
 - **国旗只能用 PNG**：`flagcdn` 默认 SVG，`CachedNetworkImage` 渲染不了。`TeamBadge` 用 `iso2` 拼 `https://flagcdn.com/w80/{iso2}.png`，无 iso2 才回退 `flagUrl`。
 - **新增数据字段**两边对齐：API 结构 + `assets/data/*.json` 离线副本 + 对应 model `fromJson`。
@@ -91,9 +91,9 @@ python generate_launcher_icons.py  # 从 assets/icon/app_icon.png 生成 Android
 - **Shell AppBar 标题**：四 Tab 用 `AppBarTitleImage` + `assets/titles/{games,rank,teams,stadium}.png`（默认高 30）；勿改回 `Text(AppInfo.displayName)`。换图须 Release 打包。细则 [docs/UI.md](docs/UI.md) §Shell AppBar 标题图。
 - **无 Material 涟漪**：`AppTheme` 全局 `NoSplash.splashFactory`（`TabBar`/`IconButton`/`InkWell` 等同理）；底栏仍用 `GestureDetector`。细则 [docs/UI.md](docs/UI.md)。
 - **赛程子 Tab**：`关注 | 赛中/未赛 | 完赛`；默认 `initialIndex: 1`。搜索：`schedule_search_panel.dart` 内嵌 `AnimatedSize`，与赛历互斥，**勿** `showSearch` 全屏。
-- **赛事日历**（无独立路由）：左上 `ScheduleDayStrip` + `core/utils/match_calendar.dart`；`AnimatedSize` 下推列表；高亮/「X场」随子 Tab（关注=关注场次日，赛中·未赛=未完结，完赛=已完赛）；点日按北京时间筛三 Tab。**勿** `/schedule/calendar` 全屏。
-- **离屏卡片动效**：`EdgeProximityScale` 均匀缩小（1.0→0.88，约 1/3 出屏）；列表/宫格/赛程 `TabBarView` 须 `Clip.none`；短列表不缩放。细则 [docs/UI.md](docs/UI.md) §列表卡片动效。
-- **关注球队**：Toggle 走 `followedTeamsProvider`；prefs key `followed_team_ids`（勿与 `cache_*` 混用）。宫格列表用 `teamsGridProvider`（已关注置顶），勿直接用 `teamsProvider`。
+- **赛事日历**（无独立路由）：`SchedulePage` 只编排控制器/滚动；赛历 ⇄ 搜索状态与可见比赛列表在 `features/schedule/state/schedule_page_state.dart`。左上 `ScheduleDayStrip` + `core/utils/match_calendar.dart`；`AnimatedSize` 下推列表；高亮/「X场」随子 Tab（关注=关注场次日，赛中·未赛=未完结，完赛=已完赛）；点日按北京时间筛三 Tab。**勿** `/schedule/calendar` 全屏。
+- **离屏卡片动效**：默认 `EdgeProximityScale(vertical)` 均匀缩小（1.0→0.88，约 1/3 出屏）；列表/宫格/赛程 `TabBarView` 须 `Clip.none`；短列表不缩放。**schedule 页特例**：顶部走 `EdgeProximityScale(verticalTopOnly)` 只缩；底部走 `StackedEdgeFade` 硬停 + scale + alpha 形成"压栈+残影"，触发线 = 屏幕物理底部（卡片可滑入 `CapsuleNav` blur 浮层下方）；sliver 必须用 `ZSortedListView`（反向 paint 修底部 z-order），**勿换回 `ListView.builder` / `CustomScrollView`**。`MatchTile.bottomFadeInset` 由调用方传入，null 时退回默认。细则 [docs/UI.md](docs/UI.md) §列表卡片动效。
+- **关注球队**：Toggle 走 `followedTeamsProvider`；prefs key `followed_team_ids`（勿与 `cache_*` 混用）。宫格列表用 `teamsGridProvider`（已关注置顶），勿直接用 `teamsProvider`。`shared/widgets` 只收 `isFollowed/onToggle` props，不直接 watch provider。
 - **StatusChip 时间**：列表/详情 `showTime: false`；开赛时间在卡片 VS 下方与详情「赛事信息」。
 - **日历提醒**：未开赛且可解析开赛时间 → 详情 AppBar 铃铛 → `addMatchToDeviceCalendar`（`device_calendar`，赛前 60 分钟）；Android 须 `READ/WRITE_CALENDAR`（已写在 `AndroidManifest`）。无开赛时间则不显示铃铛。
 - **宫格 + 关注角标**：球队 Card 内容 `Positioned.fill` 居中，角标单独 `Positioned`，避免国旗偏移。

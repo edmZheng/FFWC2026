@@ -35,7 +35,7 @@
 - **4 Tab**：赛程 / 积分榜 / 球队 / 场馆（无直播 Tab）
 - **底栏**：`CapsuleNavBar` 液态玻璃胶囊，悬浮于内容之上（`Stack`），不占底部横条
 - **点击**：`GestureDetector`，无涟漪/高亮，仅切换选中态（与下文全应用 `NoSplash` 一致）
-- **赛程回顶部**：列表滚过约 120px 后，赛程 Tab 显示 ↑ +「回顶部」；点击平滑滚顶（`scheduleScrollNavProvider`）。**离开赛程 Shell Tab** 时 `app.dart` 调用 `reset()`；回到赛程后 `SchedulePage` 在 `initState` / `activate` 首帧执行 `_syncScrollNav()`，避免列表已在顶部仍残留「回顶部」
+- **赛程回顶部**：列表滚过约 120px 后，赛程 Tab 显示 ↑ +「回顶部」；点击平滑滚顶（`scheduleScrollNavProvider`，`core/nav/schedule_scroll_nav.dart`）。**离开赛程 Shell Tab** 时 `app.dart` 调用 `reset()`；回到赛程后 `SchedulePage` 在 `initState` / `activate` 首帧执行 `_syncScrollNav()`，避免列表已在顶部仍残留「回顶部」
 - 列表底部留白：`CapsuleNavMetrics.bottomInset(context)`，避免被胶囊遮挡
 
 ## 赛程页（`/schedule`）
@@ -50,9 +50,9 @@
 | 赛历条 | Tab 下方 `ScheduleDayStrip`（`schedule_day_strip.dart`），`AnimatedSize` 约 320ms 下推 `TabBarView` |
 | 日期范围 | `scheduleCalendarDays`：已确定比赛最早～最晚日，并强制包含用户当前日历日（无固定 6/11–7/19） |
 | 默认选中 | `defaultCalendarSelectedDay()` → 用户当前日 |
-| 高亮规则 | `highlightCountByDay`：子 Tab **关注** / **赛中·未赛** / **完赛** 各用对应列表计场（仅有该 Tab 比赛的日期才高亮）；切换 Tab 时 `setState` 刷新条 |
-| 列表筛选 | 展开且已选日期时，`filterMatchesByCalendarDay` 筛三 Tab（北京时间，优先 `match_id_map` UTC） |
-| 实现勿踩 | **无** `/schedule/calendar` 路由；逻辑在 `core/utils/match_calendar.dart` |
+| 高亮规则 | `highlightCountByDay`：子 Tab **关注** / **赛中·未赛** / **完赛** 各用对应列表计场（仅有该 Tab 比赛的日期才高亮）；切换 Tab 时 `SchedulePageUiState.switchTab()` 刷新条 |
+| 列表筛选 | 展开且已选日期时，`ScheduleVisibleMatches.applyDayFilter()` → `filterMatchesByCalendarDay` 筛三 Tab（北京时间，优先 `match_id_map` UTC） |
+| 实现勿踩 | **无** `/schedule/calendar` 路由；赛历/搜索状态与可见列表在 `features/schedule/state/schedule_page_state.dart`；日期工具在 `core/utils/match_calendar.dart` |
 | 关注 Tab | `followedMatchesProvider`：主客队任一方为已关注 `teamId` 的 `isConfirmed` 比赛，按开赛时间排序 |
 
 ## 积分榜页（`/standings`）
@@ -143,12 +143,35 @@
 
 ## 列表卡片动效
 
+### 默认（`EdgeProximityScale`）
+
 - `EdgeProximityScale`（`shared/widgets/edge_proximity_scale.dart`）：约 **1/3 出屏** 后触发
 - 效果：**居中均匀缩小**（默认 `maxScale` 1.0 → `minScale` 0.88），无 3D 倾斜、位移或透明度
 - 滚动跟手（`Transform.scale` + 帧内 `scheduleFrameCallback` 校正）
 - 内容不足一屏（`maxScrollExtent <= 0`，如搜索短结果）时不缩放
 - 列表、宫格、赛程 `TabBarView` 设 `clipBehavior: Clip.none`，避免缩放被父级裁切
-- 已用于：赛程卡、积分榜/球队/场馆宫格、比赛详情 Card
+- `axis`：`vertical`（顶+底都响应）、`horizontal`、`both`、`verticalTopOnly`、`verticalBottomOnly`（后两个为 schedule 页专用，见下）
+- 已用于：积分榜/球队/场馆宫格、比赛详情 Card、`MatchTile`（默认 `vertical`，schedule 页除外）
+
+### schedule 页特例（顶/底分边，`MatchTile.bottomFadeInset != null`）
+
+只在 `SchedulePage._MatchList` 的 `MatchTile` 上生效——`MatchTile` 接到非 null `bottomFadeInset` 时**外层 `StackedEdgeFade` + 内层 `EdgeProximityScale(verticalTopOnly)`** 双层包装；其他 6 处使用 `MatchTile` 的页面 (`live`/`schedule_search_panel`/`team_detail`/`stadium_detail`/`group_detail`) 不传该参数，保持默认 `EdgeProximityScale(vertical)`。
+
+| 边 | 组件 | 行为 |
+|---|---|---|
+| 顶部 | `EdgeProximityScale(verticalTopOnly)` | 卡片正常滑出 viewport，按出屏比例缩到 0.88，无 alpha、无位置 clamp |
+| 底部 | `StackedEdgeFade`（`shared/widgets/stacked_edge_fade.dart`） | 卡片下沿触及 `viewport.bottom - bottomInset` 时**硬停**（`Transform.translate` clamp），同时 scale 1.0→0.75、alpha 1.0→0.0；累计"虚拟位移" = `卡片高度 × 1.5` 时完全淡尽（形成"残影"）。alpha < 0.5 时 `IgnorePointer` 防误触；`scrollPosition.pixels < 0`（下拉刷新 overscroll）时不 clamp。曲线 Linear |
+
+底部边缘**位置 = 屏幕物理底部**（`MediaQuery.paddingOf.bottom`，仅避开手势区），不是 `CapsuleNav` 上方。`SchedulePage._MatchList` 的 sliver `padding.bottom` 同步设为 `systemBottom`，卡片可滑入 `CapsuleNav`（液态玻璃 `BackdropFilter(blur:24)` 浮层）下方，透过模糊可见。
+
+### z-order：底部用反向 paint 的自定义 sliver
+
+底部"压栈"场景下：fading 卡片（高 index）应该被上方滑下来的 normal 卡片（低 index）覆盖；但 `ListView` 默认按 index 顺序 paint，高 index 在上，正好相反。`SchedulePage._MatchList` 因此用 `ZSortedListView`（`shared/widgets/z_sorted_sliver_list.dart`，`extends BoxScrollView`）替代 `ListView.builder`——内部 sliver 是 `ZSortedSliverList`，paint 与 hit-test 都按 `lastChild → firstChild` 反向遍历：
+
+- **底部边缘**：fading 卡片先画 → 在下层；normal 卡片后画 → 在上层覆盖 ✓
+- **顶部边缘**：cards 因为 `verticalTopOnly` 仅居中 shrink、不 clamp、相邻卡片之间留出间隙不重叠，paint 顺序对视觉无影响 ✓
+
+为什么不直接 `CustomScrollView + SliverPadding + ZSortedSliverList`：`CustomScrollView` 路径绕开了 `BoxScrollView` 内部的 MediaQuery padding 处理与一些 layout invalidation 行为，导致 calendar/search `AnimatedSize` 切换时 viewport 边界判断、`Clip.none` 行为、以及 viewport 扩大后 sliver 重 layout 触发都跟 `ListView.builder` 不一致（出现卡片画到日历栏上、退出 calendar/search 后下方 cards 空白等异常）。`ZSortedListView extends BoxScrollView` 走标准 ListView 路径即可避开这些副作用。
 
 ## 比赛详情 AppBar
 

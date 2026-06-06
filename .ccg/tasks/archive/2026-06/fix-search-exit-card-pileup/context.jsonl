@@ -1,0 +1,5 @@
+{"_example": "Fill with {\"file\": \"path\", \"reason\": \"why\"}. Seed rows are skipped."}
+{"file": "lib/features/schedule/schedule_page.dart", "reason": "search 切换处 + _MatchList 宿主"}
+{"file": "lib/shared/widgets/z_sorted_sliver_list.dart", "reason": "ZSortedListView + ZSortedSliverList 自定义实现"}
+{"file": "lib/shared/widgets/stacked_edge_fade.dart", "reason": "MatchTile 底部 fade state，可能受 ScrollPosition listener attach 影响"}
+{"file": "lib/shared/widgets/match_tile.dart", "reason": "bottomFadeInset 触发 StackedEdgeFade 包装"}

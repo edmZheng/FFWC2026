@@ -1,0 +1,228 @@
+[codeagent-wrapper]
+  Backend: gemini
+  Command: gemini -o stream-json -y --include-directories G:\13_APP_Dev\20260603-FFWC
+  PID: 20648
+  Log: C:\Users\edm_z\AppData\Local\Temp\codeagent-wrapper-20648.log
+Ripgrep is not available. Falling back to GrepTool.
+  Session-ID: b5e892fb-c3ee-4e4e-9794-c25b7df14f72
+API returned invalid content after all retries. Full report available at: C:\Users\edm_z\AppData\Local\Temp\gemini-client-error-generateJson-invalid-content-2026-06-05T11-10-16-396Z.json Error: Retry attempts exhausted
+    at retryWithBackoff (file:///E:/DevTools/npm-global/node_modules/@google/gemini-cli/bundle/chunk-U6X4OPT5.js:270882:9)
+    at async BaseLlmClient._generateWithRetry (file:///E:/DevTools/npm-global/node_modules/@google/gemini-cli/bundle/chunk-U6X4OPT5.js:271034:14)
+    at async BaseLlmClient.generateJson (file:///E:/DevTools/npm-global/node_modules/@google/gemini-cli/bundle/chunk-U6X4OPT5.js:270932:21)
+    at async NumericalClassifierStrategy.route (file:///E:/DevTools/npm-global/node_modules/@google/gemini-cli/bundle/chunk-U6X4OPT5.js:319681:28)
+    at async CompositeStrategy.route (file:///E:/DevTools/npm-global/node_modules/@google/gemini-cli/bundle/chunk-U6X4OPT5.js:319752:26)
+    at async ModelRouterService.route (file:///E:/DevTools/npm-global/node_modules/@google/gemini-cli/bundle/chunk-U6X4OPT5.js:319915:18)
+    at async GeminiClient.processTurn (file:///E:/DevTools/npm-global/node_modules/@google/gemini-cli/bundle/chunk-U6X4OPT5.js:307625:24)
+    at async GeminiClient.sendMessageStream (file:///E:/DevTools/npm-global/node_modules/@google/gemini-cli/bundle/chunk-U6X4OPT5.js:307740:14)
+    at async file:///E:/DevTools/npm-global/node_modules/@google/gemini-cli/bundle/gemini-YQATFAPB.js:10880:26
+    at async main (file:///E:/DevTools/npm-global/node_modules/@google/gemini-cli/bundle/gemini-YQATFAPB.js:16237:5)
+[Routing] NumericalClassifierStrategy failed: Error: Failed to generate content: Retry attempts exhausted
+    at BaseLlmClient._generateWithRetry (file:///E:/DevTools/npm-global/node_modules/@google/gemini-cli/bundle/chunk-U6X4OPT5.js:271064:13)
+    at async BaseLlmClient.generateJson (file:///E:/DevTools/npm-global/node_modules/@google/gemini-cli/bundle/chunk-U6X4OPT5.js:270932:21)
+    at async NumericalClassifierStrategy.route (file:///E:/DevTools/npm-global/node_modules/@google/gemini-cli/bundle/chunk-U6X4OPT5.js:319681:28)
+    at async CompositeStrategy.route (file:///E:/DevTools/npm-global/node_modules/@google/gemini-cli/bundle/chunk-U6X4OPT5.js:319752:26)
+    at async ModelRouterService.route (file:///E:/DevTools/npm-global/node_modules/@google/gemini-cli/bundle/chunk-U6X4OPT5.js:319915:18)
+    at async GeminiClient.processTurn (file:///E:/DevTools/npm-global/node_modules/@google/gemini-cli/bundle/chunk-U6X4OPT5.js:307625:24)
+    at async GeminiClient.sendMessageStream (file:///E:/DevTools/npm-global/node_modules/@google/gemini-cli/bundle/chunk-U6X4OPT5.js:307740:14)
+    at async file:///E:/DevTools/npm-global/node_modules/@google/gemini-cli/bundle/gemini-YQATFAPB.js:10880:26
+    at async main (file:///E:/DevTools/npm-global/node_modules/@google/gemini-cli/bundle/gemini-YQATFAPB.js:16237:5)
+# Gemini Role: UI Debugger
+
+> For: /ccg:debug
+
+You are a senior frontend debugging specialist focusing on UI issues, component bugs, styling problems, and user interaction errors.
+
+## CRITICAL CONSTRAINTS
+
+- **ZERO file system write permission** - READ-ONLY sandbox
+- **OUTPUT FORMAT**: Structured diagnostic report
+- **NO code changes** - Focus on diagnosis and hypothesis
+
+## Core Expertise
+
+- Component rendering issues
+- State management bugs
+- CSS/layout problems
+- Event handling errors
+- Browser compatibility issues
+- Responsive design bugs
+- Accessibility failures
+
+## Diagnostic Framework
+
+### 1. Problem Understanding
+- Visual symptoms description
+- User interaction that triggers the issue
+- Browser/device specifics
+- Console errors or warnings
+
+### 2. Hypothesis Generation
+- List 3-5 potential UI causes
+- Rank by likelihood (High/Medium/Low)
+- Note evidence for each hypothesis
+
+### 3. Validation Strategy
+- Console.log placement recommendations
+- React DevTools checks
+- CSS inspection points
+- Browser compatibility tests
+
+### 4. Root Cause Identification
+- Most likely cause with evidence
+- Component tree analysis
+
+## Response Structure
+
+```
+## UI Diagnostic Report
+
+### Visual Symptoms
+- [What user sees]
+
+### Hypotheses
+1. [Most likely] - Likelihood: High
+   - Evidence: [supporting data]
+   - Check: [how to confirm in DevTools]
+
+2. [Second guess] - Likelihood: Medium
+   - Evidence: [supporting data]
+   - Check: [how to confirm]
+
+### Recommended Checks
+- React DevTools: [what to inspect]
+- CSS Inspector: [what to look for]
+- Console: [logs to add]
+
+### Probable Root Cause
+[Conclusion with reasoning]
+```
+
+## .context Awareness
+
+If the project has a `.context/` directory:
+1. Read `.context/prefs/workflow.md` for project-specific debugging rules
+2. Check `.context/history/commits.jsonl` for past bugs on related components — search `bugs[]` and `changes.files` fields
+3. Past decision context (assumptions, rejected alternatives) may reveal why UI was built a certain way
+4. Document your diagnosis clearly: symptom, root cause, fix, and lesson learned (will be captured for future context)
+
+
+<TASK>
+项目：Flutter app `worldcup_tracker` (lib/features/schedule/schedule_page.dart 的 _MatchList 子组件)。
+
+问题：用户在赛程页打开右上"搜索"按钮 → 输入或不输入 → 点关闭搜索回到 TabBarView。**关闭搜索后，TabBarView 内的 _MatchList 卡片视觉上"全部堆到 viewport 顶部"**（看起来好几张卡片重叠在同一个 y 位置）。**用户随便滑一下屏幕**（即触发一次 ScrollPosition 变化），**列表就恢复正常**——卡片按正常 layout 间隔排列。
+
+类似行为也出现在退出"赛事日历"展开后（image 2），但不如退出搜索后严重（image 3 显示只能看见一张卡片）。
+
+完整变更上下文：
+1. lib/shared/widgets/z_sorted_sliver_list.dart：定义 `ZSortedListView extends BoxScrollView`（.builder 构造器签名跟 ListView.builder 一致），override `buildChildLayout` 返回 `ZSortedSliverList(delegate)`。`ZSortedSliverList extends SliverList`，内部 `_RenderZSortedSliverList extends RenderSliverList`，override 了 `paint` 和 `hitTestChildren`：把默认的 `firstChild → childAfter` 遍历改成 **`lastChild → childBefore` 反向**遍历（让索引大的卡片在下层、索引小的在上层）。其他 cull / 坐标计算逻辑跟原 RenderSliverMultiBoxAdaptor.paint 完全一致。
+2. lib/shared/widgets/stacked_edge_fade.dart：MatchTile 底部边缘"压栈"动效。监听 ScrollPosition 通过 `Scrollable.maybeOf(context)?.position`，在 _onScroll 里 setState 更新 `_translateY` + `_progress`，build 返回 `Transform.translate(offset: Offset(0, _translateY), child: Transform.scale(scale, child: Opacity(alpha, child: widget.child)))`。仅响应底部边缘（idealBottom > contentBottom 时 clamp），顶部不处理；overscroll (pixels < 0) 时 translate=0 progress=0。
+3. lib/shared/widgets/edge_proximity_scale.dart：MatchTile 顶部 shrink，新增 `EdgeScaleAxis.verticalTopOnly`。
+4. lib/shared/widgets/match_tile.dart：当 `bottomFadeInset` 非 null 时双层包装 `StackedEdgeFade(bottomInset: ..., child: EdgeProximityScale(verticalTopOnly, child: card))`，否则单层 `EdgeProximityScale(vertical)`。
+5. lib/features/schedule/schedule_page.dart：_MatchList 用 `ZSortedListView.builder(controller: scrollController, clipBehavior: Clip.none, physics: AlwaysScrollableScrollPhysics, padding: EdgeInsets.only(top: 8, bottom: systemBottom), itemCount, itemBuilder: (_, i) => MatchTile(..., bottomFadeInset: systemBottom))`。`systemBottom = MediaQuery.paddingOf(context).bottom`。
+6. _SchedulePageState 维护 3 个 `ScrollController` (3 tabs)，attach/detach 跟随 _MatchList lifecycle。退出搜索时调用 `_scrollAllToTop()`（对每个 controller `animateTo(0)`）。
+7. schedule_page 的 body 结构：
+```
+Column(children: [
+  AnimatedSize(child: calendarOpen ? ScheduleDayStrip : SizedBox), // 320ms
+  AnimatedSize(child: searchOpen ? InlineSearchField row : SizedBox),
+  Expanded(child: searchOpen
+      ? ScheduleSearchResults  // search 替换 TabBarView
+      : TabBarView(controller: _tabController, clipBehavior: Clip.none, children: [_MatchList × 3]))
+])
+```
+**搜索打开 → Expanded child 从 TabBarView 切换到 ScheduleSearchResults；关闭则反向**。TabBarView 整棵被销毁/重建，3 个 _MatchList、ZSortedListView、ZSortedSliverList 全是新 RenderObject。
+
+已失败的 hypothesis（前两次未解决）：
+- **H1**: 用 ParentDataWidget 把 fadeProgress 写进 sliver child 的 ParentData，自定义 sliver 按 fadeProgress 排序 paint。实测 z-order 没生效（猜测 applyParentData / setupParentData 时序导致 fadeProgress 始终 0），且未解决"退出 search 后卡片堆顶"的 layout 问题。**已删除**。
+- **H2**: 用 `CustomScrollView + SliverPadding + ZSortedSliverList` 替换 ListView.builder。出现两个新 bug：calendar 展开期间卡片画到日历栏上（Clip.none + viewport 边界判定异常）；退出 calendar/search 后 cards 空白只剩 1-3 张。
+- **H3** (当前)：把 CustomScrollView 换成 `ZSortedListView extends BoxScrollView`（走 ListView 标准路径）。修复了 calendar 时 Clip 越界，但**"退出搜索后卡片堆顶 + 滑屏恢复"问题仍然存在**。
+
+请诊断根因——为什么 ZSortedListView (BoxScrollView 子类，buildChildLayout 返回反向 paint 的 sliver) 在 search → TabBarView 切换后初次 layout 时卡片会"堆在 viewport 顶部"，但一次手势 scroll 后立刻恢复正常？
+
+候选思路（仅供参考，请独立分析）：
+- StackedEdgeFade 在 didChangeDependencies 中 `Scrollable.maybeOf(context)?.position` attach scroll listener，但首帧时 box.localToGlobal 可能返回 0 或异常值，导致 idealBottom 计算错误？但 StackedEdgeFade 只影响底部 fade，不会让卡片"堆顶"。除非每张卡片都被误判为底部 fade，translateY 都 = -idealBottom 把所有卡都推到顶部。
+- ZSortedSliverList 的 paint 在初始 layout 时（viewport size 不稳定？）行为异常？
+- ScrollController 跨 _MatchList 重建时 attach 顺序导致 ScrollPosition.pixels 异常？
+- BoxScrollView 子类 + override buildChildLayout 是否漏了什么 ListView.builder 默认带的 hint（addAutomaticKeepAlives / addRepaintBoundaries / addSemanticIndexes）？我用了 `SliverChildBuilderDelegate(itemBuilder, childCount: itemCount)`，其余默认。
+- RepaintBoundary layer 缓存 stale（每个 child 默认包 RepaintBoundary）？
+- 反向 paint 在 sliver 仅有部分 children 已 layout 时（lastChild < 期望末尾）触发了 SliverMultiBoxAdaptor 的某个 state bug？
+
+</TASK>
+
+OUTPUT: 按可能性排序的诊断假设列表。每个假设包含：
+- 根因解释
+- 证据（代码路径 + Flutter 行为原理）
+- 修复方案（具体 diff/代码片段）
+- 验证方法（如何观察 fix 是否有效）
+
+最多 5 个假设，最有可能的在最前。请避免重复用户已尝试过的方案（H1/H2 已失败）。
+
+## UI Diagnostic Report
+
+### Visual Symptoms
+- 用户关闭搜索（`TabBarView` 重建）或折叠赛事日历（`AnimatedSize` 缩小）后，列表卡片异常堆积在 viewport 顶部。
+- 只要发生任何微小的手势滑动（触发 `ScrollPosition` 变化），所有卡片瞬间恢复正常的流式布局。
+
+---
+
+### Hypotheses
+
+#### 1. [最有可能] 布局变化（Layout Shift）导致 `_translateY` 状态成为脏缓存
+- **Likelihood**: High
+- **根因解释**: 
+  `StackedEdgeFade` 依赖 `Scrollable.maybeOf(context)?.position.addListener` 来更新 `_translateY`。**但 ScrollListener 只有在 scroll offset (pixels) 变化时才会触发，在 Viewport 尺寸或位置发生变化时（如 `AnimatedSize` 正在收缩）绝对不会触发。**
+  当赛事日历收缩或搜索栏关闭时，`TabBarView` 的物理位置在屏幕上整体上移。但在动画期间或重建首帧，卡片依然保留着之前在较低位置时计算出的较大负数 `_translateY`。卡片物理 Y 坐标变小（上移） + 巨大的负数 `_translateY`（再次上移），导致它们全部被拉到了视口的顶部边界。一旦你手动滑动，ScrollListener 终于被触发，重新拿到了稳定后的正确 global 坐标，瞬间将 `_translateY` 修正为 0，布局随之恢复。
+- **证据**: “退出赛事日历后也有类似行为” 是决定性证据。退出日历并不销毁 `TabBarView`，只发生 `AnimatedSize` 尺寸变化，说明该 Bug 的核心诱因是**外层布局变化时，卡片未能得到重新计算的机会**。
+- **验证方案**: 
+  在 `StackedEdgeFade._onScroll` 中加入 `print('translating: $_translateY, pixels: ${position.pixels}, viewport: ${position.viewportDimension}');`。
+  观察在点击关闭日历/关闭搜索的瞬间（不手滑），控制台是否没有任何输出，但 UI 已经堆叠。
+
+#### 2. [极大概率] `animateTo(0)` 触发时机过早导致 Viewport 高度为 0
+- **Likelihood**: High
+- **根因解释**: 
+  在关闭搜索时，代码执行了 `setState(() { searchOpen = false; });` 并紧接着调用 `_scrollAllToTop()` (即 `animateTo(0)`)。此时 `TabBarView` 刚刚被塞回 Widget Tree，它的 `RenderViewport` 尚未完成首帧 Layout，其 `viewportDimension` 极有可能为 `0` 或异常值。
+  当 `animateTo(0)` 强行在这一帧修改 `pixels` 时，触发了 `StackedEdgeFade._onScroll`。此时计算 `contentBottom` 会得到 0。由于所有卡片的 `idealBottom` 都大于 0，于是所有卡片都计算出 `_translateY = 0 - idealBottom = -idealBottom`，在视觉上刚好完全抵消了它们的原始 Y 坐标，精准地让所有卡片全部重叠在 Y=0（顶部）的位置！
+- **证据**: 为什么退出搜索比退出日历“更严重”？因为退出搜索伴随着 `TabBarView` 的整棵树重建 + `animateTo(0)`，不仅丢失了状态，还强行在一个未完全 Layout 的帧里注入了错误的坐标系计算。
+- **验证方案**: 
+  在 `StackedEdgeFade._onScroll` 的顶部检查并打印：
+  `if (position.viewportDimension == 0) print('WARNING: Viewport is 0 during scroll event!');`
+
+#### 3. [中等] `localToGlobal` 参照系穿透了 Scrollable
+- **Likelihood**: Medium
+- **根因解释**: 
+  如果在 `StackedEdgeFade` 中计算 `idealBottom` 采用的是 `renderBox.localToGlobal(Offset.zero)` 而没有传入 `ancestor: scrollableBox`，那么它拿到的是**相对屏幕（物理屏幕）的全局坐标**。
+  当顶部带有 `AnimatedSize` 时，卡片在 Scrollable 内部的相对位置没变，但在屏幕上的绝对位置随着日历的展开/收缩在剧烈变化。这导致 `idealBottom` 的计算极度不稳定，容易被提前 Clamp 到底部（然后因为整体布局上移被带到了顶部）。
+- **验证方案**: 
+  检查 `StackedEdgeFade._onScroll` 中的 `localToGlobal` 传参。如果缺少 `ancestor: Scrollable.maybeOf(context)?.context.findRenderObject()`，则说明参照坐标系错误。
+
+---
+
+### Recommended Checks
+
+1. **Console 注入日志**:
+   在 `StackedEdgeFade._onScroll` 中：
+   ```dart
+   final position = _scrollable!.position;
+   print('[StackedEdgeFade] onScroll: '
+         'hasDim: ${position.hasViewportDimension}, '
+         'dim: ${position.viewportDimension}, '
+         'translateY: $_translateY');
+   ```
+2. **Flutter DevTools (Widget Inspector)**:
+   - 复现问题（让卡片堆在顶部），开启 Inspector 的 **Select Widget Mode**。
+   - 选中堆在顶部的一张卡片，查看它的 `Transform.translate` 节点，观察此时的 `offset.dy` 到底是一个多大的负数。
+   - 查看该卡片的 `SliverMultiBoxAdaptorParentData` 中的 `layoutOffset` 是否是正常的阶梯值（例如 0, 150, 300）。如果 `layoutOffset` 正常但 `offset.dy` 是 -150, -300，就实锤了是 `StackedEdgeFade` 的状态缓存作祟，与自定义 Sliver 无关。
+3. **时序验证 (Lifecycle)**:
+   临时把 `_SchedulePageState` 里的 `_scrollAllToTop()` 注释掉，或者用 `Future.delayed(const Duration(milliseconds: 300), _scrollAllToTop)` 延后执行，观察“退出搜索时堆顶”的严重程度是否降级为与“退出日历”相同的程度。
+
+### Probable Root Cause & Lesson Learned
+
+**结论**：这个 Bug 是典型的 **"Flutter Render Metrics 与 State 同步脱节"**。
+`StackedEdgeFade` 的视觉位置不仅取决于滚动的 `pixels`，还强依赖于视口的物理高度(`viewportDimension`)以及自身的物理排布(`layoutOffset`)。但原实现只通过 `ScrollPosition.addListener` 监听了 `pixels` 的变化，**完全漏掉了 Layout 变化（AnimatedSize 动画）和首帧 Viewport 为 0 的边界情况**。
+
+一旦发生不带 scroll 事件的 Layout 布局突变，卡片就会带着旧的（或者在 Viewport 为 0 时算出的）脏 `_translateY` 强行渲染，导致偏移严重错乱。这与 `ZSortedListView` 的反向 paint 没有任何关系（反向 paint 是无辜的，它只是恰好让所有被移到顶部的卡片 Z 轴排序发生改变）。
+
+*建议的修复方向：在 `StackedEdgeFade` 中拦截 Viewport 为 0 的计算；或者更彻底地，废弃 `setState` 更新 `_translateY` 的做法，改为实现一个继承自 `SingleChildRenderObjectWidget` 的自定义 RenderBox，在 `paint` 阶段动态读取 ScrollPosition 来进行 `context.paintChild(child, offset + dynamicY)`，这样能彻底免疫任何 Layout Shift 带来的状态不同步问题。*
+
+---
+SESSION_ID: b5e892fb-c3ee-4e4e-9794-c25b7df14f72

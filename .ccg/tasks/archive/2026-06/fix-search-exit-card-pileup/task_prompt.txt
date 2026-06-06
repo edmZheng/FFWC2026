@@ -1,0 +1,52 @@
+ROLE_FILE: C:/Users/edm_z/.claude/.ccg/prompts/__ROLE_FILE__
+
+<TASK>
+项目：Flutter app `worldcup_tracker` (lib/features/schedule/schedule_page.dart 的 _MatchList 子组件)。
+
+问题：用户在赛程页打开右上"搜索"按钮 → 输入或不输入 → 点关闭搜索回到 TabBarView。**关闭搜索后，TabBarView 内的 _MatchList 卡片视觉上"全部堆到 viewport 顶部"**（看起来好几张卡片重叠在同一个 y 位置）。**用户随便滑一下屏幕**（即触发一次 ScrollPosition 变化），**列表就恢复正常**——卡片按正常 layout 间隔排列。
+
+类似行为也出现在退出"赛事日历"展开后（image 2），但不如退出搜索后严重（image 3 显示只能看见一张卡片）。
+
+完整变更上下文：
+1. lib/shared/widgets/z_sorted_sliver_list.dart：定义 `ZSortedListView extends BoxScrollView`（.builder 构造器签名跟 ListView.builder 一致），override `buildChildLayout` 返回 `ZSortedSliverList(delegate)`。`ZSortedSliverList extends SliverList`，内部 `_RenderZSortedSliverList extends RenderSliverList`，override 了 `paint` 和 `hitTestChildren`：把默认的 `firstChild → childAfter` 遍历改成 **`lastChild → childBefore` 反向**遍历（让索引大的卡片在下层、索引小的在上层）。其他 cull / 坐标计算逻辑跟原 RenderSliverMultiBoxAdaptor.paint 完全一致。
+2. lib/shared/widgets/stacked_edge_fade.dart：MatchTile 底部边缘"压栈"动效。监听 ScrollPosition 通过 `Scrollable.maybeOf(context)?.position`，在 _onScroll 里 setState 更新 `_translateY` + `_progress`，build 返回 `Transform.translate(offset: Offset(0, _translateY), child: Transform.scale(scale, child: Opacity(alpha, child: widget.child)))`。仅响应底部边缘（idealBottom > contentBottom 时 clamp），顶部不处理；overscroll (pixels < 0) 时 translate=0 progress=0。
+3. lib/shared/widgets/edge_proximity_scale.dart：MatchTile 顶部 shrink，新增 `EdgeScaleAxis.verticalTopOnly`。
+4. lib/shared/widgets/match_tile.dart：当 `bottomFadeInset` 非 null 时双层包装 `StackedEdgeFade(bottomInset: ..., child: EdgeProximityScale(verticalTopOnly, child: card))`，否则单层 `EdgeProximityScale(vertical)`。
+5. lib/features/schedule/schedule_page.dart：_MatchList 用 `ZSortedListView.builder(controller: scrollController, clipBehavior: Clip.none, physics: AlwaysScrollableScrollPhysics, padding: EdgeInsets.only(top: 8, bottom: systemBottom), itemCount, itemBuilder: (_, i) => MatchTile(..., bottomFadeInset: systemBottom))`。`systemBottom = MediaQuery.paddingOf(context).bottom`。
+6. _SchedulePageState 维护 3 个 `ScrollController` (3 tabs)，attach/detach 跟随 _MatchList lifecycle。退出搜索时调用 `_scrollAllToTop()`（对每个 controller `animateTo(0)`）。
+7. schedule_page 的 body 结构：
+```
+Column(children: [
+  AnimatedSize(child: calendarOpen ? ScheduleDayStrip : SizedBox), // 320ms
+  AnimatedSize(child: searchOpen ? InlineSearchField row : SizedBox),
+  Expanded(child: searchOpen
+      ? ScheduleSearchResults  // search 替换 TabBarView
+      : TabBarView(controller: _tabController, clipBehavior: Clip.none, children: [_MatchList × 3]))
+])
+```
+**搜索打开 → Expanded child 从 TabBarView 切换到 ScheduleSearchResults；关闭则反向**。TabBarView 整棵被销毁/重建，3 个 _MatchList、ZSortedListView、ZSortedSliverList 全是新 RenderObject。
+
+已失败的 hypothesis（前两次未解决）：
+- **H1**: 用 ParentDataWidget 把 fadeProgress 写进 sliver child 的 ParentData，自定义 sliver 按 fadeProgress 排序 paint。实测 z-order 没生效（猜测 applyParentData / setupParentData 时序导致 fadeProgress 始终 0），且未解决"退出 search 后卡片堆顶"的 layout 问题。**已删除**。
+- **H2**: 用 `CustomScrollView + SliverPadding + ZSortedSliverList` 替换 ListView.builder。出现两个新 bug：calendar 展开期间卡片画到日历栏上（Clip.none + viewport 边界判定异常）；退出 calendar/search 后 cards 空白只剩 1-3 张。
+- **H3** (当前)：把 CustomScrollView 换成 `ZSortedListView extends BoxScrollView`（走 ListView 标准路径）。修复了 calendar 时 Clip 越界，但**"退出搜索后卡片堆顶 + 滑屏恢复"问题仍然存在**。
+
+请诊断根因——为什么 ZSortedListView (BoxScrollView 子类，buildChildLayout 返回反向 paint 的 sliver) 在 search → TabBarView 切换后初次 layout 时卡片会"堆在 viewport 顶部"，但一次手势 scroll 后立刻恢复正常？
+
+候选思路（仅供参考，请独立分析）：
+- StackedEdgeFade 在 didChangeDependencies 中 `Scrollable.maybeOf(context)?.position` attach scroll listener，但首帧时 box.localToGlobal 可能返回 0 或异常值，导致 idealBottom 计算错误？但 StackedEdgeFade 只影响底部 fade，不会让卡片"堆顶"。除非每张卡片都被误判为底部 fade，translateY 都 = -idealBottom 把所有卡都推到顶部。
+- ZSortedSliverList 的 paint 在初始 layout 时（viewport size 不稳定？）行为异常？
+- ScrollController 跨 _MatchList 重建时 attach 顺序导致 ScrollPosition.pixels 异常？
+- BoxScrollView 子类 + override buildChildLayout 是否漏了什么 ListView.builder 默认带的 hint（addAutomaticKeepAlives / addRepaintBoundaries / addSemanticIndexes）？我用了 `SliverChildBuilderDelegate(itemBuilder, childCount: itemCount)`，其余默认。
+- RepaintBoundary layer 缓存 stale（每个 child 默认包 RepaintBoundary）？
+- 反向 paint 在 sliver 仅有部分 children 已 layout 时（lastChild < 期望末尾）触发了 SliverMultiBoxAdaptor 的某个 state bug？
+
+</TASK>
+
+OUTPUT: 按可能性排序的诊断假设列表。每个假设包含：
+- 根因解释
+- 证据（代码路径 + Flutter 行为原理）
+- 修复方案（具体 diff/代码片段）
+- 验证方法（如何观察 fix 是否有效）
+
+最多 5 个假设，最有可能的在最前。请避免重复用户已尝试过的方案（H1/H2 已失败）。

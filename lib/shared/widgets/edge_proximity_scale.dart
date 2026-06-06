@@ -6,7 +6,7 @@ import 'package:flutter/scheduler.dart';
 import 'detail_fixed_header_body.dart';
 
 /// 滚动时卡片离屏：按出屏比例均匀缩小（无 3D 倾斜/位移/透明度）。
-enum EdgeScaleAxis { vertical, horizontal, both }
+enum EdgeScaleAxis { vertical, horizontal, both, verticalTopOnly, verticalBottomOnly }
 
 class EdgeProximityScale extends StatefulWidget {
   const EdgeProximityScale({
@@ -159,6 +159,8 @@ class _EdgeProximityScaleState extends State<EdgeProximityScale> {
           _dominantFraction(topFrac, bottomFrac),
           _dominantFraction(leftFrac, rightFrac),
         ),
+      EdgeScaleAxis.verticalTopOnly => _dominantFraction(topFrac, 0),
+      EdgeScaleAxis.verticalBottomOnly => _dominantFraction(0, bottomFrac),
     };
 
     return _progressFromOverflow(dominant);

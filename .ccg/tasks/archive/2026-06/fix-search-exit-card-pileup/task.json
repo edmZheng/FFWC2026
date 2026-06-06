@@ -1,0 +1,13 @@
+{
+  "id": "fix-search-exit-card-pileup",
+  "title": "退出搜索后赛程列表卡片堆到顶部、需滑屏才恢复正常排列",
+  "status": "archived",
+  "strategy": "debug-investigate",
+  "currentPhase": "5-fix",
+  "gate": null,
+  "nextAction": "done — 方案 A 验证大幅改善，残留 AnimatedSize 中间帧小堆叠由用户接受（方案 D），经验已落 memory/project_schedule_edge_anim.md",
+  "gate": null,
+  "branch": "main",
+  "scope": "fix-search-exit-card-pileup",
+  "createdAt": "2026-06-05T19:04:55+08:00"
+}

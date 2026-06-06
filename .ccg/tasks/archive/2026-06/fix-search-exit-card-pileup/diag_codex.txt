@@ -1,0 +1,11 @@
+[codeagent-wrapper]
+  Backend: codex
+  Command: codex e --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check -C G:\13_APP_Dev\20260603-FFWC --json -
+  PID: 15288
+  Log: C:\Users\edm_z\AppData\Local\Temp\codeagent-wrapper-15288.log
+
+=== Recent Errors ===
+Using stdin mode for task due to: piped input, explicit "-", newline, double-quote, backtick, length>800
+codex command not found in PATH
+Read stdout error: read |0: file already closed
+Log file: C:\Users\edm_z\AppData\Local\Temp\codeagent-wrapper-15288.log (deleted)
