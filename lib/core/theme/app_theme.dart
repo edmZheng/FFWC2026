@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -109,6 +110,15 @@ class AppTheme {
     return base.copyWith(
       textTheme: text,
       primaryTextTheme: _textTheme(base.primaryTextTheme, p),
+      // 全局子页转场：Android 默认的 PredictiveBack 共享元素 peek 会在下层
+      // 路由停绘后露出透明窗口（白块）。改用不快照/不缩放 peek 的 FadeForwards，
+      // 其 delegatedTransition 会带下层一起绘制并以 surface 主题色兜底，消除白块。
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: <TargetPlatform, PageTransitionsBuilder>{
+          TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        },
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: p.background,
         foregroundColor: p.onSurface,

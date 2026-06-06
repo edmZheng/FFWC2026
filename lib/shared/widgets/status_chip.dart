@@ -1,34 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/utils/match_time.dart';
 import '../../data/models/match.dart';
-import '../../providers.dart';
 
 /// Small chip showing match status: 进行中 / 完场 / 日期时间.
-class StatusChip extends ConsumerWidget {
+class StatusChip extends StatelessWidget {
   const StatusChip({
     super.key,
     required this.match,
     this.showTime = true,
+    this.kickoffText,
   });
 
   final Match match;
 
   /// 未开赛时是否在芯片内显示时间（赛程卡片已在 VS 下方展示）。
   final bool showTime;
+  final String? kickoffText;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final utc = ref.watch(kickoffUtcByMatchIdProvider(match.id));
-    String formatKickoff() {
-      if (utc != null) return MatchTime.formatBeijing(utc);
-      if (match.localDate != null) {
-        return MatchTime.formatChineseDateTime(match.localDate!);
-      }
-      return '待定';
-    }
     return switch (match.status) {
       MatchStatus.live => _liveChip(context, cs),
       MatchStatus.finished => _chip(
@@ -40,7 +32,7 @@ class StatusChip extends ConsumerWidget {
       MatchStatus.notStarted => showTime
           ? _chip(
               context,
-              label: formatKickoff(),
+              label: kickoffText ?? '待定',
               bg: cs.surfaceContainerHighest,
               fg: cs.onSurface,
             )
@@ -77,8 +69,12 @@ class StatusChip extends ConsumerWidget {
         ),
       );
 
-  Widget _chip(BuildContext context,
-          {required String label, required Color bg, required Color fg}) =>
+  Widget _chip(
+    BuildContext context, {
+    required String label,
+    required Color bg,
+    required Color fg,
+  }) =>
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(

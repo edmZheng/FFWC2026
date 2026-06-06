@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../providers.dart';
+import '../../core/utils/kickoff_time_resolver.dart';
+import '../../data/repositories/worldcup/providers.dart';
+import '../../data/models/match.dart';
+import '../../data/repositories/lineups/providers.dart';
+import '../../data/repositories/match_id_map_repository.dart';
 import '../../shared/widgets/match_tile.dart';
 
 class LivePage extends ConsumerWidget {
@@ -18,13 +22,14 @@ class LivePage extends ConsumerWidget {
         actions: [
           // Pulse indicator when live matches exist
           async.whenOrNull(
-            data: (ms) => ms.isNotEmpty
-                ? Padding(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: _PulsingDot(),
-                  )
-                : null,
-          ) ?? const SizedBox.shrink(),
+                data: (ms) => ms.isNotEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: _PulsingDot(),
+                      )
+                    : null,
+              ) ??
+              const SizedBox.shrink(),
         ],
       ),
       body: async.when(
@@ -41,16 +46,20 @@ class LivePage extends ConsumerWidget {
                   SizedBox(height: 12),
                   Text('暂无直播赛事'),
                   SizedBox(height: 4),
-                  Text('比赛进行时将实时更新',
-                      style: TextStyle(fontSize: 12)),
+                  Text('比赛进行时将实时更新', style: TextStyle(fontSize: 12)),
                 ],
               ),
             );
           }
+          final kickoffTexts = kickoffTextsFor(
+            matches,
+            ref.watch(matchIdMapProvider).valueOrNull,
+          );
           return ListView.builder(
             itemCount: matches.length,
             itemBuilder: (_, i) => MatchTile(
               match: matches[i],
+              kickoffText: kickoffTexts[matches[i].id] ?? '时间待定',
               onTap: () => context.push('/match/${matches[i].id}'),
             ),
           );
@@ -58,6 +67,17 @@ class LivePage extends ConsumerWidget {
       ),
     );
   }
+}
+
+Map<String, String> kickoffTextsFor(
+  List<Match> matches,
+  Map<String, MatchIdMapEntry>? map,
+) {
+  final kickoffUtcById = <String, DateTime?>{
+    if (map != null)
+      for (final entry in map.entries) entry.key: entry.value.kickoffUtc,
+  };
+  return KickoffTimeResolver.formatMap(matches, kickoffUtcById);
 }
 
 class _PulsingDot extends StatefulWidget {

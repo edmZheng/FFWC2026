@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../providers.dart';
+import '../../core/utils/kickoff_time_resolver.dart';
+import '../../data/models/match.dart';
+import '../../data/repositories/lineups/providers.dart';
+import '../../data/repositories/match_id_map_repository.dart';
+import '../../data/repositories/worldcup/providers.dart';
 import '../../shared/widgets/capsule_nav_bar.dart';
 import '../../shared/widgets/match_tile.dart';
+import 'providers.dart';
 
 /// 赛程页内嵌搜索框（与赛历条同层下推展开）。
 class ScheduleInlineSearchField extends StatefulWidget {
@@ -119,6 +124,7 @@ class ScheduleSearchResults extends ConsumerWidget {
 
     final matchesAsync = ref.watch(matchesProvider);
     final indexAsync = ref.watch(scheduleSearchIndexProvider);
+    final kickoffMap = ref.watch(matchIdMapProvider).valueOrNull;
 
     return matchesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -133,9 +139,9 @@ class ScheduleSearchResults extends ConsumerWidget {
           message: '名单索引加载失败：$e',
         ),
         data: (index) {
-          final confirmed =
-              allMatches.where((m) => m.isConfirmed).toList();
+          final confirmed = allMatches.where((m) => m.isConfirmed).toList();
           final results = index.search(trimmed, confirmed);
+          final kickoffTexts = kickoffTextsFor(results, kickoffMap);
           if (results.isEmpty) {
             return _HintPane(
               icon: Icons.event_busy_outlined,
@@ -151,6 +157,7 @@ class ScheduleSearchResults extends ConsumerWidget {
               final m = results[i];
               return MatchTile(
                 match: m,
+                kickoffText: kickoffTexts[m.id] ?? '时间待定',
                 onTap: () => context.push('/match/${m.id}'),
               );
             },
@@ -159,6 +166,17 @@ class ScheduleSearchResults extends ConsumerWidget {
       ),
     );
   }
+}
+
+Map<String, String> kickoffTextsFor(
+  List<Match> matches,
+  Map<String, MatchIdMapEntry>? map,
+) {
+  final kickoffUtcById = <String, DateTime?>{
+    if (map != null)
+      for (final entry in map.entries) entry.key: entry.value.kickoffUtc,
+  };
+  return KickoffTimeResolver.formatMap(matches, kickoffUtcById);
 }
 
 class _HintPane extends StatelessWidget {

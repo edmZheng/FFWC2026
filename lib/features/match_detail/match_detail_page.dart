@@ -3,10 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/calendar/match_calendar_reminder.dart';
 import '../../core/l10n/zh_cn.dart';
+import '../../core/utils/kickoff_time_resolver.dart';
 import '../../core/utils/match_time.dart';
 import '../../data/models/lineup.dart';
 import '../../data/models/match.dart';
-import '../../providers.dart';
+import '../../data/repositories/lineups/providers.dart';
+import '../../data/repositories/match_id_map_repository.dart';
+import '../../data/repositories/worldcup/providers.dart';
 import '../../shared/widgets/detail_scaffold.dart';
 import '../../shared/widgets/edge_proximity_scale.dart';
 import '../../shared/widgets/score_pill.dart';
@@ -40,12 +43,12 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
     final cs = Theme.of(context).colorScheme;
     final homeName = ZhCn.matchHomeName(match);
     final awayName = ZhCn.matchAwayName(match);
+    final kickoffText = KickoffTimeResolver.formatForMatchId(
+      matchId: widget.matchId,
+      localDate: match.localDate,
+      kickoffUtcById: kickoffUtcMap(ref.watch(matchIdMapProvider).valueOrNull),
+    );
     final utc = ref.watch(kickoffUtcByMatchIdProvider(widget.matchId));
-    final kickoffText = utc != null
-        ? MatchTime.formatBeijing(utc)
-        : (match.localDate != null
-            ? MatchTime.formatChineseDateTime(match.localDate!)
-            : null);
 
     final canAddCalendar = match.status == MatchStatus.notStarted &&
         resolveKickoffLocal(
@@ -90,61 +93,66 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
           EdgeProximityScale(
             axis: EdgeScaleAxis.vertical,
             child: Card(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-              child: Column(
-                children: [
-                  if (match.stage == MatchStage.group && match.group.isNotEmpty)
-                    Text(
-                      '${match.group}组 · 第${match.matchday}轮',
-                      style: tt.titleSmall?.copyWith(color: cs.onSurfaceVariant),
-                    )
-                  else
-                    Text(
-                      MatchTime.chineseStage(match.stage.label),
-                      style: tt.titleSmall?.copyWith(color: cs.onSurfaceVariant),
-                    ),
-                  if (kickoffText != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      kickoffText,
-                      style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Expanded(
-                        child: _teamCol(
-                          context,
-                          homeName,
-                          match.homeTeam?.iso2 ?? '',
-                          match.homeTeam?.fifaCode ?? '',
-                          match.homeTeam?.flagUrl ?? '',
-                        ),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                child: Column(
+                  children: [
+                    if (match.stage == MatchStage.group &&
+                        match.group.isNotEmpty)
+                      Text(
+                        '${match.group}组 · 第${match.matchday}轮',
+                        style:
+                            tt.titleSmall?.copyWith(color: cs.onSurfaceVariant),
+                      )
+                    else
+                      Text(
+                        MatchTime.chineseStage(match.stage.label),
+                        style:
+                            tt.titleSmall?.copyWith(color: cs.onSurfaceVariant),
                       ),
-                      ScorePill(
-                        match: match,
-                        style: tt.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Expanded(
-                        child: _teamCol(
-                          context,
-                          awayName,
-                          match.awayTeam?.iso2 ?? '',
-                          match.awayTeam?.fifaCode ?? '',
-                          match.awayTeam?.flagUrl ?? '',
-                        ),
+                    if (kickoffText != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        kickoffText,
+                        style: tt.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ],
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Expanded(
+                          child: _teamCol(
+                            context,
+                            homeName,
+                            match.homeTeam?.iso2 ?? '',
+                            match.homeTeam?.fifaCode ?? '',
+                            match.homeTeam?.flagUrl ?? '',
+                          ),
+                        ),
+                        ScorePill(
+                          match: match,
+                          style: tt.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Expanded(
+                          child: _teamCol(
+                            context,
+                            awayName,
+                            match.awayTeam?.iso2 ?? '',
+                            match.awayTeam?.fifaCode ?? '',
+                            match.awayTeam?.flagUrl ?? '',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
           ),
           const SizedBox(height: 16),
           _section(context, '赛事信息', [
@@ -181,8 +189,8 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
               ..._scorerRows(context, homeName, match.homeScorers),
               ..._scorerRows(context, awayName, match.awayScorers),
             ]),
-          _LineupSection(matchId: widget.matchId,
-              homeName: homeName, awayName: awayName),
+          _LineupSection(
+              matchId: widget.matchId, homeName: homeName, awayName: awayName),
         ],
       ),
     );
@@ -270,7 +278,8 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
     return [
       Padding(
         padding: const EdgeInsets.only(left: 4, top: 4, bottom: 2),
-        child: Text(teamName, style: const TextStyle(fontWeight: FontWeight.w600)),
+        child:
+            Text(teamName, style: const TextStyle(fontWeight: FontWeight.w600)),
       ),
       ...scorers.map(
         (s) => ListTile(
@@ -281,6 +290,11 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
       ),
     ];
   }
+}
+
+Map<String, DateTime> kickoffUtcMap(Map<String, MatchIdMapEntry>? map) {
+  if (map == null) return const {};
+  return {for (final entry in map.entries) entry.key: entry.value.kickoffUtc};
 }
 
 class _LineupSection extends ConsumerWidget {
@@ -297,12 +311,13 @@ class _LineupSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(lineupByMatchIdProvider(matchId));
-    final tt = Theme.of(context).textTheme;
     return async.when(
       loading: () => const Padding(
         padding: EdgeInsets.symmetric(vertical: 16),
-        child: Center(child: SizedBox(
-          width: 24, height: 24,
+        child: Center(
+            child: SizedBox(
+          width: 24,
+          height: 24,
           child: CircularProgressIndicator(strokeWidth: 2),
         )),
       ),
@@ -345,50 +360,48 @@ class _TeamLineupCard extends StatelessWidget {
     return EdgeProximityScale(
       axis: EdgeScaleAxis.vertical,
       child: Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '$label$formationStr',
-              style: tt.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: cs.onSurface,
-              ),
-            ),
-            const SizedBox(height: 6),
-            for (final row in team.initialLineup)
-              if (row.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: Wrap(
-                    spacing: 10,
-                    runSpacing: 4,
-                    children: row
-                        .map((p) => _PlayerChip(player: p))
-                        .toList(),
-                  ),
-                ),
-            if (team.substitutes.isNotEmpty) ...[
-              const Divider(height: 16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Text(
-                '替补',
-                style: tt.labelSmall?.copyWith(color: cs.outline),
+                '$label$formationStr',
+                style: tt.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface,
+                ),
               ),
-              const SizedBox(height: 4),
-              Wrap(
-                spacing: 10,
-                runSpacing: 4,
-                children: team.substitutes
-                    .map((p) => _PlayerChip(player: p, dim: true))
-                    .toList(),
-              ),
+              const SizedBox(height: 6),
+              for (final row in team.initialLineup)
+                if (row.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Wrap(
+                      spacing: 10,
+                      runSpacing: 4,
+                      children: row.map((p) => _PlayerChip(player: p)).toList(),
+                    ),
+                  ),
+              if (team.substitutes.isNotEmpty) ...[
+                const Divider(height: 16),
+                Text(
+                  '替补',
+                  style: tt.labelSmall?.copyWith(color: cs.outline),
+                ),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 4,
+                  children: team.substitutes
+                      .map((p) => _PlayerChip(player: p, dim: true))
+                      .toList(),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
-    ),
     );
   }
 }

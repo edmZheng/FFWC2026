@@ -14,7 +14,7 @@ import 'features/standings/standings_page.dart';
 import 'features/standings/world_cup_rules_page.dart';
 import 'features/teams/team_detail_page.dart';
 import 'features/teams/teams_page.dart';
-import 'providers.dart';
+import 'core/live/providers.dart';
 import 'shared/widgets/capsule_nav_bar.dart';
 
 final _rootNavKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -30,8 +30,7 @@ final router = GoRouter(
       routes: [
         GoRoute(
           path: '/schedule',
-          pageBuilder: (_, __) =>
-              const NoTransitionPage(child: SchedulePage()),
+          pageBuilder: (_, __) => const NoTransitionPage(child: SchedulePage()),
         ),
         GoRoute(
           path: '/standings',
@@ -44,8 +43,7 @@ final router = GoRouter(
         ),
         GoRoute(
           path: '/stadiums',
-          pageBuilder: (_, __) =>
-              const NoTransitionPage(child: StadiumsPage()),
+          pageBuilder: (_, __) => const NoTransitionPage(child: StadiumsPage()),
         ),
       ],
     ),
@@ -89,12 +87,12 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(liveScoreSyncProvider);
     return MaterialApp.router(
-        title: AppInfo.displayName,
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
-        themeMode: ThemeMode.system,
-        routerConfig: router,
-      );
+      title: AppInfo.displayName,
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.system,
+      routerConfig: router,
+    );
   }
 }
 
@@ -124,8 +122,7 @@ class _ScaffoldWithNav extends ConsumerWidget {
     if (currentIndex < 0) currentIndex = 0;
 
     final scrollNav = ref.watch(scheduleScrollNavProvider);
-    final showScrollToTop =
-        currentIndex == 0 && scrollNav.showScrollToTop;
+    final showScrollToTop = currentIndex == 0 && scrollNav.showScrollToTop;
 
     final bottomPad = MediaQuery.paddingOf(context).bottom;
     final screenWidth = MediaQuery.sizeOf(context).width;

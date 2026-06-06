@@ -1,42 +1,42 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../providers.dart';
 
 /// 球队关注切换（爱心），用于详情页 AppBar 等。
-class TeamFollowButton extends ConsumerWidget {
-  const TeamFollowButton({super.key, required this.teamId});
+class TeamFollowButton extends StatelessWidget {
+  const TeamFollowButton({
+    super.key,
+    required this.teamId,
+    required this.isFollowed,
+    required this.onToggle,
+  });
 
   final String teamId;
+  final bool isFollowed;
+  final VoidCallback onToggle;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final followed = ref.watch(followedTeamsProvider).contains(teamId);
+  Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
     return IconButton(
-      tooltip: followed ? '取消关注' : '关注球队',
-      onPressed: () =>
-          ref.read(followedTeamsProvider.notifier).toggle(teamId),
+      tooltip: isFollowed ? '取消关注' : '关注球队',
+      onPressed: onToggle,
       icon: Icon(
-        followed ? Icons.favorite : Icons.favorite_border,
-        color: followed ? cs.error : null,
+        isFollowed ? Icons.favorite : Icons.favorite_border,
+        color: isFollowed ? cs.error : null,
       ),
     );
   }
 }
 
 /// 宫格卡片右上角关注标记。
-class TeamFollowBadge extends ConsumerWidget {
-  const TeamFollowBadge({super.key, required this.teamId});
+class TeamFollowBadge extends StatelessWidget {
+  const TeamFollowBadge({super.key, required this.isFollowed});
 
-  final String teamId;
+  final bool isFollowed;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (!ref.watch(followedTeamsProvider).contains(teamId)) {
-      return const SizedBox.shrink();
-    }
+  Widget build(BuildContext context) {
+    if (!isFollowed) return const SizedBox.shrink();
     return DecoratedBox(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.92),

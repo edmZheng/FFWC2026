@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/utils/kickoff_time_resolver.dart';
 import '../../data/models/match.dart';
-import '../../providers.dart';
+import '../../data/repositories/lineups/providers.dart';
+import '../../data/repositories/match_id_map_repository.dart';
+import '../../data/repositories/worldcup/providers.dart';
 import '../../shared/widgets/detail_fixed_header_body.dart';
 import '../../shared/widgets/detail_scaffold.dart';
 import '../../shared/widgets/group_table.dart';
@@ -30,9 +33,8 @@ class GroupDetailPage extends ConsumerWidget {
         body: Center(child: Text(e.toString())),
       ),
       data: (standings) {
-        final group = standings
-            .where((s) => s.groupName == groupName)
-            .firstOrNull;
+        final group =
+            standings.where((s) => s.groupName == groupName).firstOrNull;
         if (group == null) {
           return DetailScaffold(
             title: Text('$groupName 组'),
@@ -77,6 +79,10 @@ class GroupDetailPage extends ConsumerWidget {
                       ],
                     );
                   }
+                  final kickoffTexts = kickoffTextsFor(
+                    groupMatches,
+                    ref.watch(matchIdMapProvider).valueOrNull,
+                  );
                   return ListView.builder(
                     clipBehavior: Clip.none,
                     padding: EdgeInsets.only(top: topInset, bottom: 16),
@@ -86,6 +92,7 @@ class GroupDetailPage extends ConsumerWidget {
                       final m = groupMatches[i - 1];
                       return MatchTile(
                         match: m,
+                        kickoffText: kickoffTexts[m.id] ?? '时间待定',
                         onTap: () => context.push('/match/${m.id}'),
                       );
                     },
@@ -98,4 +105,15 @@ class GroupDetailPage extends ConsumerWidget {
       },
     );
   }
+}
+
+Map<String, String> kickoffTextsFor(
+  List<Match> matches,
+  Map<String, MatchIdMapEntry>? map,
+) {
+  final kickoffUtcById = <String, DateTime?>{
+    if (map != null)
+      for (final entry in map.entries) entry.key: entry.value.kickoffUtc,
+  };
+  return KickoffTimeResolver.formatMap(matches, kickoffUtcById);
 }

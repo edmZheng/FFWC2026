@@ -5,13 +5,18 @@ import 'package:go_router/go_router.dart';
 import '../../core/l10n/zh_cn.dart';
 import '../../data/models/player.dart';
 import '../../data/models/team.dart';
-import '../../providers.dart';
+import '../../core/utils/kickoff_time_resolver.dart';
+import '../../data/repositories/lineups/providers.dart';
+import '../../data/repositories/match_id_map_repository.dart';
+import '../../data/repositories/rankings/providers.dart';
+import '../../data/repositories/worldcup/providers.dart';
 import '../../shared/widgets/detail_fixed_header_body.dart';
 import '../../shared/widgets/detail_scaffold.dart';
 import '../../shared/widgets/match_tile.dart';
 import '../../shared/widgets/section_title.dart';
 import '../../shared/widgets/team_badge.dart';
 import '../../shared/widgets/team_follow_button.dart';
+import '../../data/repositories/followed_teams/providers.dart';
 
 class TeamDetailPage extends ConsumerWidget {
   const TeamDetailPage({super.key, required this.teamId});
@@ -21,6 +26,7 @@ class TeamDetailPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final team = ref.watch(teamByIdProvider(teamId));
     final matchesAsync = ref.watch(matchesProvider);
+    final kickoffMap = ref.watch(matchIdMapProvider).valueOrNull;
     final squadAsync = ref.watch(squadByTeamIdProvider(teamId));
 
     if (team == null) {
@@ -35,7 +41,14 @@ class TeamDetailPage extends ConsumerWidget {
 
     return DetailScaffold(
       title: Text(name),
-      actions: [TeamFollowButton(teamId: teamId)],
+      actions: [
+        TeamFollowButton(
+          teamId: teamId,
+          isFollowed: ref.watch(followedTeamsProvider).contains(teamId),
+          onToggle: () =>
+              ref.read(followedTeamsProvider.notifier).toggle(teamId),
+        ),
+      ],
       body: DetailFixedHeaderBody(
         header: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -61,8 +74,7 @@ class TeamDetailPage extends ConsumerWidget {
                       .where(
                         (m) =>
                             m.isConfirmed &&
-                            (m.homeTeamId == teamId ||
-                                m.awayTeamId == teamId),
+                            (m.homeTeamId == teamId || m.awayTeamId == teamId),
                       )
                       .toList();
                   if (myMatches.isEmpty) {
@@ -71,11 +83,14 @@ class TeamDetailPage extends ConsumerWidget {
                       child: Text('尚无已确定的赛程'),
                     );
                   }
+                  final kickoffTexts = KickoffTimeResolver.formatMap(
+                      myMatches, kickoffUtcMap(kickoffMap));
                   return Column(
                     children: myMatches
                         .map(
                           (m) => MatchTile(
                             match: m,
+                            kickoffText: kickoffTexts[m.id] ?? '时间待定',
                             onTap: () => context.push('/match/${m.id}'),
                           ),
                         )
@@ -110,6 +125,11 @@ class TeamDetailPage extends ConsumerWidget {
       ),
     );
   }
+}
+
+Map<String, DateTime> kickoffUtcMap(Map<String, MatchIdMapEntry>? map) {
+  if (map == null) return const {};
+  return {for (final entry in map.entries) entry.key: entry.value.kickoffUtc};
 }
 
 /// 国旗 + 小组 / FIFA 排名：居中、左右并排。
@@ -260,8 +280,7 @@ class _PlayerRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final hasZh =
-        player.nameZh.isNotEmpty && player.nameZh != player.nameEn;
+    final hasZh = player.nameZh.isNotEmpty && player.nameZh != player.nameEn;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(

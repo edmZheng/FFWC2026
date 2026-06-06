@@ -59,29 +59,36 @@ flutter analyze
 
 ```
 lib/
-├── main.dart / app.dart / providers.dart    # 入口 + 路由 + 全局 provider
+├── main.dart / app.dart / providers.dart    # 入口 + 路由 + provider facade 导出
 ├── core/
 │   ├── api/                                 # ApiClient + Endpoints（含 workerBaseUrl）
 │   ├── cache/                               # CacheStore（SWR）
 │   ├── l10n/zh_cn.dart                      # 球队/球场中文名映射
 │   ├── stadium/stadium_photos.dart          # 本地球场插画映射
 │   ├── calendar/match_calendar_reminder.dart # 系统日历 + 赛前提醒
-│   ├── live/live_score_sync.dart            # 直播跟分轮询间隔
+│   ├── live/                                # 直播跟分 provider + 轮询间隔
+│   ├── infra/                               # SharedPreferences / CacheStore / ApiClient providers
 │   ├── constants/app_info.dart              # 显示名 FFWC2026
 │   ├── nav/schedule_scroll_nav.dart         # 赛程页 → 底栏「回顶部」状态
 │   ├── theme/                               # AppTheme + mono_palette（炭蓝双模）
-│   └── utils/                               # coerce, match_time, match_calendar, teams_grid_sort, flag_url
+│   └── utils/                               # coerce, match_time, match_calendar, kickoff_time_resolver, teams_grid_sort, flag_url
 ├── data/
 │   ├── models/                              # Match / Team / Stadium / GroupStanding / Player / Lineup
 │   └── repositories/
-│       ├── worldcup_repository.dart         # 主数据（network → cache → asset）
+│       ├── worldcup_repository.dart         # 主数据 facade
+│       ├── worldcup/                        # WorldCupDataPolicy + WorldCupDataAssembler
+│       ├── worldcup/providers.dart          # 主数据 providers + selectors
+│       ├── followed_teams/                  # 关注球队 store + provider
+│       ├── lineups/                         # match_id_map + kickoffUtc + lineup providers
+│       ├── lineup/                          # LineupMapper + LineupClient + result
+│       ├── lineup_repository.dart           # Worker → Highlightly /lineups facade
+│       ├── rankings/providers.dart          # squads + FIFA rankings providers
 │       ├── squad_repository.dart            # 26 人名单（assets 离线）
 │       ├── ranking_repository.dart          # FIFA 排名（assets 离线）
-│       ├── match_id_map_repository.dart     # worldcup26 → Highlightly + UTC
-│       ├── followed_teams_store.dart        # 关注球队 id（SharedPreferences）
-│       └── lineup_repository.dart           # Worker → Highlightly /lineups
+│       └── match_id_map_repository.dart     # worldcup26 → Highlightly + UTC
 ├── features/
-│   ├── schedule/                            # schedule_page / day_strip / search_panel / search_index
+│   ├── schedule/                            # schedule_page / day_strip / search_panel / search_index / providers
+│   │   └── state/                           # 赛程页 UI state + visible matches view model
 │   └── …                                    # standings（含 world_cup_rules_page）/ teams / stadiums / match_detail
 └── shared/widgets/                          # AppBarTitleImage / MatchTile / CapsuleNavBar / EdgeProximityScale 等
 

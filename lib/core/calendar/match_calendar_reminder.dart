@@ -1,10 +1,10 @@
 import 'package:device_calendar/device_calendar.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
-import 'package:timezone/timezone.dart';
 
 import '../../data/models/match.dart';
 import '../../data/models/stadium.dart';
 import '../l10n/zh_cn.dart';
+import '../utils/kickoff_time_resolver.dart';
 import '../utils/match_time.dart';
 
 /// 将比赛写入系统日历的结果。
@@ -60,23 +60,11 @@ const Duration kMatchCalendarEventDuration = Duration(hours: 2);
 DateTime? resolveKickoffLocal({
   DateTime? kickoffUtc,
   DateTime? localDate,
-}) {
-  if (kickoffUtc != null) {
-    return kickoffUtc.toUtc().toLocal();
-  }
-  if (localDate != null) {
-    // 无 UTC 映射时，local_date 按应用内北京时间口径处理。
-    final utc = DateTime.utc(
-      localDate.year,
-      localDate.month,
-      localDate.day,
-      localDate.hour,
-      localDate.minute,
-    ).subtract(MatchTime.beijingOffset);
-    return utc.toLocal();
-  }
-  return null;
-}
+}) =>
+    KickoffTimeResolver.resolveDeviceLocal(
+      kickoffUtc: kickoffUtc,
+      localDate: localDate,
+    );
 
 String buildMatchCalendarTitle({
   required String homeName,
@@ -168,7 +156,8 @@ Future<MatchCalendarReminderResult> addMatchToDeviceCalendar({
   final event = Event(
     calendarId,
     title: buildMatchCalendarTitle(homeName: homeName, awayName: awayName),
-    description: locationLine == null ? description : '$description\n$locationLine',
+    description:
+        locationLine == null ? description : '$description\n$locationLine',
     start: startTz,
     end: toDeviceTzDateTime(endWall),
     reminders: [Reminder(minutes: kMatchCalendarReminderMinutes)],

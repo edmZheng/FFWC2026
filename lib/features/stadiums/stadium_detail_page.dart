@@ -3,7 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/zh_cn.dart';
-import '../../providers.dart';
+import '../../core/utils/kickoff_time_resolver.dart';
+import '../../data/models/match.dart';
+import '../../data/repositories/lineups/providers.dart';
+import '../../data/repositories/match_id_map_repository.dart';
+import '../../data/repositories/worldcup/providers.dart';
 import '../../shared/widgets/detail_scaffold.dart';
 import '../../shared/widgets/match_tile.dart';
 import '../../shared/widgets/section_title.dart';
@@ -74,8 +78,7 @@ class StadiumDetailPage extends ConsumerWidget {
               const Divider(height: 32),
               const SectionTitle('赛程'),
               matchesAsync.when(
-                loading: () =>
-                    const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Text(e.toString()),
                 data: (matches) {
                   final venueMatches = matches
@@ -87,11 +90,16 @@ class StadiumDetailPage extends ConsumerWidget {
                       child: Text('暂无已确定的赛事安排'),
                     );
                   }
+                  final kickoffTexts = kickoffTextsFor(
+                    venueMatches,
+                    ref.watch(matchIdMapProvider).valueOrNull,
+                  );
                   return Column(
                     children: venueMatches
                         .map(
                           (m) => MatchTile(
                             match: m,
+                            kickoffText: kickoffTexts[m.id] ?? '时间待定',
                             onTap: () => context.push('/match/${m.id}'),
                           ),
                         )
@@ -122,4 +130,15 @@ class StadiumDetailPage extends ConsumerWidget {
           ],
         ),
       );
+}
+
+Map<String, String> kickoffTextsFor(
+  List<Match> matches,
+  Map<String, MatchIdMapEntry>? map,
+) {
+  final kickoffUtcById = <String, DateTime?>{
+    if (map != null)
+      for (final entry in map.entries) entry.key: entry.value.kickoffUtc,
+  };
+  return KickoffTimeResolver.formatMap(matches, kickoffUtcById);
 }

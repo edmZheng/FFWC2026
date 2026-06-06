@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/zh_cn.dart';
-import '../../providers.dart';
+import '../../data/repositories/followed_teams/providers.dart';
+import '../../features/teams/providers.dart';
 import '../../shared/widgets/app_bar_title_image.dart';
 import '../../shared/widgets/capsule_nav_bar.dart';
 import '../../shared/widgets/edge_proximity_scale.dart';
@@ -42,58 +43,61 @@ class TeamsPage extends ConsumerWidget {
             final name = ZhCn.teamName(t);
             return EdgeProximityScale(
               child: InkWell(
-              onTap: () => context.push('/team/${t.id}'),
-              borderRadius: BorderRadius.circular(10),
-              child: Card(
-                margin: EdgeInsets.zero,
-                clipBehavior: Clip.none,
-                child: Stack(
+                onTap: () => context.push('/team/${t.id}'),
+                borderRadius: BorderRadius.circular(10),
+                child: Card(
+                  margin: EdgeInsets.zero,
                   clipBehavior: Clip.none,
-                  children: [
-                    Positioned.fill(
-                      child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        TeamBadge(
-                          iso2: t.iso2,
-                          fifaCode: t.fifaCode,
-                          flagUrl: t.flagUrl,
-                          size: 48,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Positioned.fill(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            TeamBadge(
+                              iso2: t.iso2,
+                              fifaCode: t.fifaCode,
+                              flagUrl: t.flagUrl,
+                              size: 48,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              name,
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.labelMedium,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (t.fifaCode.isNotEmpty)
+                              Text(
+                                t.fifaCode,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .labelSmall
+                                    ?.copyWith(
+                                      color:
+                                          Theme.of(context).colorScheme.outline,
+                                    ),
+                              ),
+                          ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          name,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.labelMedium,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                      ),
+                      Positioned(
+                        top: 6,
+                        right: 6,
+                        child: IgnorePointer(
+                          child: TeamFollowBadge(
+                              isFollowed: ref
+                                  .watch(followedTeamsProvider)
+                                  .contains(t.id)),
                         ),
-                        if (t.fifaCode.isNotEmpty)
-                          Text(
-                            t.fifaCode,
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelSmall
-                                ?.copyWith(
-                                  color:
-                                      Theme.of(context).colorScheme.outline,
-                                ),
-                          ),
-                      ],
                       ),
-                    ),
-                    Positioned(
-                      top: 6,
-                      right: 6,
-                      child: IgnorePointer(
-                        child: TeamFollowBadge(teamId: t.id),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
             );
           },
         ),
