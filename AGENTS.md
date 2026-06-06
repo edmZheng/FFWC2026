@@ -5,7 +5,7 @@
 
 ## 架构地图（feature-first）
 
-- `main.dart` → 初始化 `SharedPreferences`，注入 provider；首次启动（key `ffwc_launched_v1` 不存在）时 `SplashScreen(child: WelcomePage(child: MyApp()))`。视频淡出后显示 `WelcomePage`（纯黑 + 图标 + 「开始使用」按钮），点击才进 `MyApp`。**`WelcomePage` 不能用 `Scaffold`**——它在 SplashScreen Stack 中无 MaterialApp 祖先，用 `Directionality + Stack + ColoredBox`。Splash 触屏显「跳过」须外层 **`Listener(onPointerDown)`**，底层 child **`IgnorePointer`**，**勿**全屏 `onTap`。细则 [docs/UI.md](docs/UI.md) §首次启动封面 / §欢迎页。
+- `main.dart` → 初始化 `SharedPreferences`，注入 provider；首次启动（key `ffwc_launched_v1` 不存在）时 `SplashScreen(child: WelcomePage(child: MyApp()))`。WelcomePage 自挂载即在 Stack **固定槽位**预渲染；视频淡出后露出，点击「开始使用」进 `MyApp`。**勿** `_splashDone` 后 `return widget.child`（会 remount 欢迎页二次淡入）。**`WelcomePage` 不能用 `Scaffold`**——无 MaterialApp 祖先，用 `Directionality + Stack + ColoredBox`。Splash 触屏显「跳过」：`Positioned.fill` + **`Listener(onPointerDown)`**（`HitTestBehavior.opaque`）；播放期 **`IgnorePointer(ignoring: !_splashDone)`**；**勿**全屏 `onTap` / **勿** position 停滞定时自动跳过。细则 [docs/UI.md](docs/UI.md) §首次启动封面 / §欢迎页。
 - `app.dart` → `MaterialApp.router` + `go_router` + `ThemeMode.system`。Tab 页走 `ShellRoute`；详情页用 `parentNavigatorKey: _rootNavKey`（全屏）。
 - `providers.dart` → 兼容导出 facade；实际 provider 按能力拆分到 `core/infra`、`core/live`、`data/repositories/**/providers.dart`、`features/**/providers.dart`。
 - `core/` 基础设施，`data/` 模型+仓库，`features/` 按页面，`shared/widgets/` 复用组件。

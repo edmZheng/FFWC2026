@@ -195,11 +195,11 @@ class ZhCn {
 
     if (lower.startsWith('winner group ')) {
       final g = s.substring('Winner Group '.length).trim();
-      return '${g}组头名';
+      return '$g组头名';
     }
     if (lower.startsWith('runner-up group ')) {
       final g = s.substring('Runner-up Group '.length).trim();
-      return '${g}组次名';
+      return '$g组次名';
     }
     if (lower.startsWith('3rd group ')) {
       final rest = s.substring('3rd Group '.length).trim();

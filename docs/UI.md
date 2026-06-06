@@ -10,11 +10,13 @@
 |---|---|
 | 视频 | `assets/videos/cover.mp4`，`VideoPlayer`，`BoxFit.cover` 全屏 |
 | 结束时机 | 视频播放停止且剩余 ≤ 300ms 时触发；备用 timer = 视频时长 + 800ms（时长未知则 15s 上限） |
-| 淡出 | 停在最后一帧，700ms `easeInOut` 淡出 → 主界面 |
-| 卡死保护 | 每秒轮询 position；连续 2 秒无变化视为卡住，立即触发淡出 |
+| 淡出 | 停在最后一帧，700ms `easeInOut` 淡出视频层 → 露出 Stack 底层欢迎页 |
 | 初始化失败 | `initialize()` 超时 8s 或抛异常 → 直接跳过，`_splashDone = true` |
-| **跳过按钮** | 任意触屏按下 → 右上角「跳过」毛玻璃胶囊（250ms 淡入）；3 秒无操作淡出；再次触屏重置计时；点「跳过」立即触发视频淡出。外层 `Listener(onPointerDown)` + `HitTestBehavior.translucent` 包住 `Stack`；底层 `IgnorePointer(child: WelcomePage)`；视频层 `IgnorePointer`。淡入在 `addPostFrameCallback` 后 `_skipFade.forward(from: 0)` |
-| **⚠️ 禁忌（跳过触屏）** | **勿**用全屏 `GestureDetector(onTap)`（触屏轻移时手势常不识别）；**勿**把触屏层包进 `Opacity`/`FadeTransition`（Android hit-test 断裂） |
+| **Widget 树** | 始终 `Directionality → Stack`：`widget.child`（WelcomePage）占**固定槽位**；`!_splashDone` 时叠视频层 + 触屏层 + 跳过按钮。**⚠️ 勿**在 `_splashDone` 后 `return widget.child`——WelcomePage 会 remount，`initState` 600ms 淡入重播，静态封面闪一下 |
+| 交互屏蔽 | 播放期 `IgnorePointer(ignoring: !_splashDone)`；`_splashDone` 后欢迎页可点「开始使用」 |
+| **跳过按钮** | 任意触屏按下 → 右上角深色半透明胶囊「跳过」（250ms 淡入）；3 秒无操作淡出；再次触屏重置计时；点「跳过」仅触发视频 700ms 淡出（**触屏本身不跳过**）。`Positioned.fill` + `Listener(onPointerDown, HitTestBehavior.opaque)`；视频层 `IgnorePointer` |
+| **⚠️ 禁忌** | **勿**全屏 `GestureDetector(onTap)`（触屏轻移时常不识别）；**勿**把触屏层包进 `Opacity`/`FadeTransition`（Android hit-test 断裂）；**勿** position 停滞定时器自动淡出（真机 position 上报偶发停住会误跳过）；**勿** `_splashDone` 后改树结构 remount child |
+| 回归测试 | `test/splash_screen_test.dart`（触屏显跳过、触屏不自动跳过、fade 完成不 remount） |
 
 ## 欢迎页（WelcomePage）
 
@@ -22,7 +24,7 @@
 
 | 项 | 说明 |
 |---|---|
-| 触发时机 | `SplashScreen._splashDone = true`（视频 fade 完成）后由 `build()` 返回 `widget.child`（即 WelcomePage） |
+| 触发时机 | 自 Splash 挂载即在 Stack 底层淡入（600ms）；视频淡出后可见；`_splashDone` 仅去掉视频 overlay，**不 remount** |
 | 背景 | 纯黑（`ColoredBox(Colors.black)`） |
 | 图标 | `assets/icon/welcome_icon.png`，120×120，`BoxShape.circle` + `BoxShadow(Colors.white54, blur=48, spread=12)` 白色发光阴影 |
 | 标题 | `FFWC2026`，白色，30px bold，letterSpacing=2 |

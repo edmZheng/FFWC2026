@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:worldcup_tracker/core/live/live_score_sync.dart';
-import 'package:worldcup_tracker/core/utils/match_time.dart';
 import 'package:worldcup_tracker/data/models/match.dart';
 
 Match _match({required MatchStatus status}) => Match(

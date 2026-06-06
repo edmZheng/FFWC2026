@@ -1,28 +1,27 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:worldcup_tracker/core/utils/match_time.dart';
 import 'package:worldcup_tracker/data/models/match.dart';
 import 'package:worldcup_tracker/data/models/player.dart';
 import 'package:worldcup_tracker/data/models/team.dart';
 import 'package:worldcup_tracker/features/schedule/schedule_search_index.dart';
 
 void main() {
-  final brazil = Team(
+  const brazil = Team(
     id: '1',
     nameEn: 'Brazil',
     nameFa: '',
     flagUrl: '',
     fifaCode: 'BRA',
     iso2: 'br',
-    groups: const ['A'],
+    groups: ['A'],
   );
-  final japan = Team(
+  const japan = Team(
     id: '2',
     nameEn: 'Japan',
     nameFa: '',
     flagUrl: '',
     fifaCode: 'JPN',
     iso2: 'jp',
-    groups: const ['C'],
+    groups: ['C'],
   );
 
   Match mk(String id, String homeId, String awayId) => Match(

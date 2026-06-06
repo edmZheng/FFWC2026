@@ -343,7 +343,9 @@ class _TapRow extends StatelessWidget {
                 imagePath!,
                 width: 18,
                 height: 18,
-                color: isDark ? Colors.white.withOpacity(0.6) : cs.onSurfaceVariant,
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.6)
+                    : cs.onSurfaceVariant,
               )
             else
               Icon(icon, size: 18, color: cs.onSurfaceVariant),

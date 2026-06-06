@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:worldcup_tracker/core/calendar/match_calendar_reminder.dart';
-import 'package:worldcup_tracker/core/utils/match_time.dart';
 import 'package:worldcup_tracker/data/models/match.dart';
 import 'package:worldcup_tracker/data/models/stadium.dart';
 
@@ -31,7 +30,7 @@ void main() {
 
   group('buildMatchCalendarDescription', () {
     test('includes stage and reminder hint', () {
-      final match = Match(
+      const match = Match(
         id: '1',
         homeTeamId: '1',
         awayTeamId: '2',
@@ -41,8 +40,8 @@ void main() {
         awayTeamLabel: '',
         homeScore: 0,
         awayScore: 0,
-        homeScorers: const [],
-        awayScorers: const [],
+        homeScorers: [],
+        awayScorers: [],
         group: 'A',
         matchday: 1,
         localDate: null,
@@ -50,7 +49,7 @@ void main() {
         timeElapsed: 'notstarted',
         stage: MatchStage.group,
         status: MatchStatus.notStarted,
-        stadium: const Stadium(
+        stadium: Stadium(
           id: '4',
           nameEn: 'AT&T Stadium',
           nameFa: '',

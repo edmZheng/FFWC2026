@@ -24,10 +24,7 @@ class _SplashScreenState extends State<SplashScreen>
   late final Animation<double> _skipOpacity;
 
   Timer? _fallbackTimer;
-  Timer? _stallTimer;
   Timer? _skipHideTimer;
-  Duration _lastPos = Duration.zero;
-  int _stallTicks = 0;
 
   bool _videoReady = false;
   bool _splashDone = false;
@@ -61,7 +58,6 @@ class _SplashScreenState extends State<SplashScreen>
     if (_fadeTriggered || !mounted) return;
     _fadeTriggered = true;
     _fallbackTimer?.cancel();
-    _stallTimer?.cancel();
     _skipHideTimer?.cancel();
     _fade.forward();
   }
@@ -72,10 +68,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (!_skipVisible) {
       setState(() => _skipVisible = true);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || !_skipVisible) return;
-        _skipFade.forward(from: 0);
-      });
+      _skipFade.forward(from: 0);
     }
 
     _skipHideTimer?.cancel();
@@ -111,22 +104,6 @@ class _SplashScreenState extends State<SplashScreen>
     if (mounted) {
       setState(() => _videoReady = true);
       await _video.play();
-      _stallTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-        if (_fadeTriggered) {
-          _stallTimer?.cancel();
-          return;
-        }
-        final pos = _video.value.position;
-        if (pos == _lastPos) {
-          if (++_stallTicks >= 2) {
-            _stallTimer?.cancel();
-            _triggerFade();
-          }
-        } else {
-          _stallTicks = 0;
-          _lastPos = pos;
-        }
-      });
     }
   }
 
@@ -147,7 +124,6 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void dispose() {
     _fallbackTimer?.cancel();
-    _stallTimer?.cancel();
     _skipHideTimer?.cancel();
     _video.removeListener(_onVideoTick);
     _video.dispose();
@@ -158,75 +134,95 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    if (_splashDone) return widget.child;
-
     final size = _videoReady ? _video.value.size : Size.zero;
     final hasValidSize = size != Size.zero;
     final topPadding = MediaQuery.of(context).padding.top;
 
-    return Listener(
-      behavior: HitTestBehavior.translucent,
-      onPointerDown: _fadeTriggered ? null : _onPointerDown,
+    // 欢迎页始终占 Stack 同一槽位。勿在 _splashDone 后 return widget.child，
+    // 否则 WelcomePage 会从 IgnorePointer 子树移到 Splash 直系子节点而 remount，
+    // initState 里的淡入会再播一遍，表现为静态封面闪一下/重复出现。
+    return Directionality(
+      textDirection: TextDirection.ltr,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // 底层 WelcomePage 不参与命中测试，避免与全屏触屏层竞争
-          IgnorePointer(child: widget.child),
-          // Video layer — pure visual, no hit-test logic here
           IgnorePointer(
-            child: FadeTransition(
-              opacity: _opacity,
-              child: ColoredBox(
-                color: Colors.black,
-                child: _videoReady && hasValidSize
-                    ? FittedBox(
-                        fit: BoxFit.cover,
-                        child: SizedBox(
-                          width: size.width,
-                          height: size.height,
-                          child: VideoPlayer(_video),
-                        ),
-                      )
-                    : null,
+            ignoring: !_splashDone,
+            child: widget.child,
+          ),
+          if (!_splashDone) ...[
+            // Video layer — pure visual, no hit-test logic here
+            IgnorePointer(
+              child: FadeTransition(
+                opacity: _opacity,
+                child: ColoredBox(
+                  color: Colors.black,
+                  child: _videoReady && hasValidSize
+                      ? FittedBox(
+                          fit: BoxFit.cover,
+                          child: SizedBox(
+                            width: size.width,
+                            height: size.height,
+                            child: VideoPlayer(_video),
+                          ),
+                        )
+                      : null,
+                ),
               ),
             ),
-          ),
-          // Skip button — 置于最上层，点击立即淡出
-          if (_skipVisible)
-            Positioned(
-              top: topPadding + 16,
-              right: 20,
-              child: FadeTransition(
-                opacity: _skipOpacity,
-                child: GestureDetector(
+            // Full-screen touch layer. Keep it as a Stack child so it is always
+            // hit-testable even though the visual layers are IgnorePointer.
+            if (!_fadeTriggered)
+              Positioned.fill(
+                child: Listener(
                   behavior: HitTestBehavior.opaque,
-                  onTap: _triggerFade,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.35),
-                        width: 0.8,
+                  onPointerDown: _onPointerDown,
+                ),
+              ),
+            // Skip button — 置于最上层，点击立即淡出
+            if (_skipVisible)
+              Positioned(
+                top: topPadding + 16,
+                right: 20,
+                child: FadeTransition(
+                  opacity: _skipOpacity,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _triggerFade,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
                       ),
-                    ),
-                    child: const Text(
-                      '跳过',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.5,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.42),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.42),
+                          width: 0.8,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.24),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Text(
+                        '跳过',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
+          ],
         ],
       ),
     );
