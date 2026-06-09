@@ -4,11 +4,11 @@
 
 - **赛程**：48 队 × 104 场；子 Tab **关注 / 赛中·未赛 / 完赛**（默认「赛中·未赛」）；左上 **赛历**、右上 **搜索**（`DetailFixedHeaderBody` 顶栏叠列表，`AnimatedSize` 互斥展开；赛历高亮随当前子 Tab）；按北京时间筛当日；搜索支持球队名、球员名；**开赛时间统一北京时间**（UTC+8）
 - **积分榜**：12 个小组排名表；AppBar 右上 **官方规则**（`help_outline`）→ 2026 赛制与排名规则全文
-- **球队**：**关注**（爱心，持久化本地）；宫格已关注置顶 + 角标；详情顶栏队徽 + 小组 / FIFA 排名；**赛程**、**出战名单**（26 人，中文名 + 队长标）
+- **球队**：**关注**（爱心，持久化本地）；宫格已关注置顶 + 角标；详情顶栏队徽 + 小组 / FIFA 排名；**赛程**、**出战名单**（26 人，中文名 + 队长标）；详情页国家队队徽半透明水印背景（48 队）
 - **直播跟分**：有进行中比赛时全局每 30 秒刷新赛程 API，赛程卡与相关列表比分自动更新（需可访问 worldcup26.ir）
 - **场馆**：16 座宫格 + 详情；中文赛事实名（`ZhCn` 按场馆 id 映射）+ 详情「球场常用名」；宫格封面 PNG 插画 + 底部中文条遮盖图上英文名（`StadiumCover` / `stadium_photos.dart`）
 - **离线优先**：网络不可用回退打包资产 JSON，App 始终可打开
-- **首次启动**：封面视频（播完 350ms 淡出）→ 欢迎页「开始使用」（300ms 叠化进首页）→ 主界面（仅 key `ffwc_launched_v1` 首次写入前；验证须清除应用数据或卸载重装）
+- **首次启动**：封面视频（播完 350ms 淡出）→ 美加墨主题欢迎页（AI 字标 + 奖杯水印 + 三国辉光，「开始使用」300ms 叠化进首页）→ 主界面（仅 key `ffwc_launched_v1` 首次写入前；验证须清除应用数据或卸载重装）
 
 ## 技术栈
 
@@ -90,7 +90,8 @@ cf-worker/                                   # Cloudflare Worker 代理（独立
 scripts/                                     # 数据脚本 + build_release / generate_launcher_icons
 assets/
 ├── data/                                    # games/teams/groups/stadiums/squads/fifa_rankings/match_id_map
-├── icon/app_icon.png                        # 脚本生成 mipmap 用主图；AS Image Asset 可直接改 res/mipmap-*
+├── icon/                                    # app_icon（mipmap 源）、welcome_icon、ffwc_wordmark.png（欢迎页 AI 字标）、wc26_trophy_bg.webp（奖杯水印）
+├── nation_logo/                             # 48 队队徽 .webp（FIFA 三字码命名，球队详情页水印背景）
 ├── titles/                                  # Shell 五 Tab AppBar 横幅（games / rank / teams / stadium / about）
 ├── stadiums/                                # 16 张球场插画（id 1–16 均为 .png）
 └── videos/cover.mp4                         # 首次启动封面视频

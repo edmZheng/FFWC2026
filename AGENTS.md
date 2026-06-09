@@ -77,7 +77,7 @@ python generate_launcher_icons.py  # 从 assets/icon/app_icon.png 生成 Android
 - **UI 文案一律中文**（面向中文用户）。新增/改 UI 字符串保持中文。
 - **比赛时间显示用北京时间**（UTC+8 硬编码，**不**走 `DateTime.toLocal()`）。用 `KickoffTimeResolver` 统一展示 / 赛历 / 排序；底层优先 `kickoffUtcByMatchIdProvider` + `MatchTime.formatBeijing`，映射缺失才回退 `match.localDate`（场馆本地时间）。
 - **球员中文名**：`squads.json` 已预处理为简体大陆约定俗成译名。新增球员先查 `scripts/zh_overrides.py` 字典是否覆盖；港台音译（朗拿度、卡斯米路等）必须在 override 里替换。
-- **国旗只能用 PNG**：`flagcdn` 默认 SVG，`CachedNetworkImage` 渲染不了。`TeamBadge` 用 `iso2` 拼 `https://flagcdn.com/w80/{iso2}.png`，无 iso2 才回退 `flagUrl`。
+- **国旗只能用 PNG，且按屏选档**：`flagcdn` 默认 SVG 渲染不了；档位由 `FlagUrl.pngCandidates(physicalWidth: 显示宽×dpr)` 自动选（w40–w1280 取 ≥ 需求最小档），数据源 w80 URL 同步升档，w80/w40 兜底。`TeamBadge` 须在 `didChangeDependencies` 重建候选（`initState` 拿不到 MediaQuery）。**勿**写死 `w80`（高分屏模糊已踩坑 2026-06-10）。
 - **新增数据字段**两边对齐：API 结构 + `assets/data/*.json` 离线副本 + 对应 model `fromJson`。
 - **JSON 解析走容错**：用 `core/utils/coerce.dart`，不要直接强转。
 - **下拉刷新**：赛程/积分榜/球队详情用 `RefreshIndicator`；`refresh()` 禁止先置 `loading`；列表 `skipLoadingOnReload: true`。细则见 [docs/UI.md](docs/UI.md)。

@@ -8,26 +8,38 @@ void main() {
       expect(FlagUrl.resolveCode(iso2: 'ENG'), 'gb-eng');
     });
 
-    test('builds png url from iso2', () {
+    test('builds png url from iso2 (default tier w160)', () {
       expect(
         FlagUrl.pngUrl(iso2: 'BR'),
-        'https://flagcdn.com/w80/br.png',
+        'https://flagcdn.com/w160/br.png',
       );
     });
 
-    test('pngCandidates includes API flag and fallbacks', () {
+    test('pngCandidates upgrades API flag tier and keeps fallbacks', () {
       final list = FlagUrl.pngCandidates(
         iso2: 'BR',
         flagUrl: 'https://flagcdn.com/w80/br.png',
       );
-      expect(list.first, 'https://flagcdn.com/w80/br.png');
+      expect(list.first, 'https://flagcdn.com/w160/br.png');
+      expect(list, contains('https://flagcdn.com/w80/br.png'));
       expect(list.length, greaterThan(1));
     });
 
-    test('uses bundled png flag url when iso missing', () {
+    test('selects tier by physical width', () {
+      expect(
+        FlagUrl.pngCandidates(iso2: 'BR', physicalWidth: 288).first,
+        'https://flagcdn.com/w320/br.png',
+      );
+      expect(
+        FlagUrl.pngCandidates(iso2: 'BR', physicalWidth: 64).first,
+        'https://flagcdn.com/w80/br.png',
+      );
+    });
+
+    test('uses bundled png flag url when iso missing (tier upgraded)', () {
       expect(
         FlagUrl.pngUrl(flagUrl: 'https://flagcdn.com/w80/za.png'),
-        'https://flagcdn.com/w80/za.png',
+        'https://flagcdn.com/w160/za.png',
       );
     });
 

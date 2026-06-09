@@ -35,6 +35,7 @@ flutter:
     - assets/data/fifa_rankings.json
     - assets/data/match_id_map.json
     - assets/icon/
+    - assets/nation_logo/
     - assets/stadiums/
     - assets/titles/
     - assets/videos/

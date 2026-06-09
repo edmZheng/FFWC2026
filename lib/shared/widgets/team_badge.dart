@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/utils/flag_url.dart';
@@ -23,32 +24,35 @@ class TeamBadge extends StatefulWidget {
 }
 
 class _TeamBadgeState extends State<TeamBadge> {
-  late List<String> _candidates;
+  List<String> _candidates = const [];
   int _index = 0;
 
-  @override
-  void initState() {
-    super.initState();
-    _candidates = FlagUrl.pngCandidates(
+  /// 依赖 MediaQuery（devicePixelRatio），故在 didChangeDependencies /
+  /// didUpdateWidget 中重建而非 initState。
+  void _rebuildCandidates() {
+    final dpr = MediaQuery.maybeOf(context)?.devicePixelRatio ?? 2;
+    final next = FlagUrl.pngCandidates(
       iso2: widget.iso2,
       fifaCode: widget.fifaCode,
       flagUrl: widget.flagUrl,
+      physicalWidth: widget.size * dpr,
     );
+    if (!listEquals(next, _candidates)) {
+      _candidates = next;
+      _index = 0;
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _rebuildCandidates();
   }
 
   @override
   void didUpdateWidget(covariant TeamBadge oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.iso2 != widget.iso2 ||
-        oldWidget.fifaCode != widget.fifaCode ||
-        oldWidget.flagUrl != widget.flagUrl) {
-      _candidates = FlagUrl.pngCandidates(
-        iso2: widget.iso2,
-        fifaCode: widget.fifaCode,
-        flagUrl: widget.flagUrl,
-      );
-      _index = 0;
-    }
+    _rebuildCandidates();
   }
 
   void _tryNextUrl() {

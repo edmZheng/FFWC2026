@@ -17,11 +17,25 @@ class FlagUrl {
     return null;
   }
 
+  /// flagcdn 可用宽度档位。
+  static const _cdnWidths = [40, 80, 160, 320, 640, 1280];
+
+  /// 选择 >= 物理像素宽度的最小档位，避免高分屏放大模糊。
+  static int _tierFor(double physicalWidth) {
+    for (final w in _cdnWidths) {
+      if (w >= physicalWidth) return w;
+    }
+    return _cdnWidths.last;
+  }
+
   /// 按优先级返回候选 PNG URL（去重）。
+  /// [physicalWidth] 为显示区域的物理像素宽（逻辑宽 × devicePixelRatio），
+  /// 决定 flagcdn 档位；数据源 URL 若也是 flagcdn wXX 路径会同步升级档位。
   static List<String> pngCandidates({
     String iso2 = '',
     String fifaCode = '',
     String flagUrl = '',
+    double physicalWidth = 160,
   }) {
     final seen = <String>{};
     final out = <String>[];
@@ -33,10 +47,18 @@ class FlagUrl {
       if (seen.add(u)) out.add(u);
     }
 
-    add(flagUrl.trim().isNotEmpty ? flagUrl : null);
+    final tier = _tierFor(physicalWidth);
+    final src = flagUrl.trim();
+    if (src.isNotEmpty) {
+      // 数据源（worldcup26）给的是 flagcdn w80 小图，按需升级到合适档位。
+      add(src.contains('flagcdn.com/')
+          ? src.replaceFirst(RegExp(r'/w\d+/'), '/w$tier/')
+          : src);
+    }
 
     final code = resolveCode(iso2: iso2, fifaCode: fifaCode);
     if (code != null) {
+      add('https://flagcdn.com/w$tier/$code.png');
       add('https://flagcdn.com/w80/$code.png');
       add('https://flagcdn.com/w40/$code.png');
     }

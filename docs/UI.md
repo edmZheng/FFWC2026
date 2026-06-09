@@ -27,11 +27,12 @@
 |---|---|
 | **Widget 树** | `MyApp` 始终在 Stack **固定槽位**；欢迎层（黑底 + 内容）叠在上方 `FadeTransition` 内，整页一体淡入/淡出 |
 | 触发时机 | 自 Splash 挂载即在底层预渲染；视频 350ms 淡出后可见；去掉 overlay **不 remount** 首页 |
-| 背景 | 纯黑（`ColoredBox`，与内容同在 overlay 内） |
-| 图标 | `assets/icon/welcome_icon.png`，88×88，`BoxShape.circle` + `BoxShadow(Color(0x33FFFFFF), blur=36, spread=4)` |
-| 标题 / 副标题 | `FFWC2026`（30px bold）/ `一手掌握世界杯赛程信息`（`white60`，15px） |
-| 按钮 | 白底黑字「开始使用」，`GestureDetector + Container`，200×48，圆角 24；key `welcome-start-button` |
-| 淡入 | initState `_fade.forward()`，**300ms** `easeInOut` |
+| 背景 | 纯黑 + 2026 美加墨主题：三国色辉光（加红左上 / 美蓝右上 / 墨绿底部，`_Glow` 径向渐变）+ 奖杯纪念徽记水印（`assets/icon/wc26_trophy_bg.webp` 660×1185，AI 重绘金杯 + 炭灰 26，`Opacity 0.30`、宽 82%、居中微偏上，辉光之上内容之下）+ 屏幕四角角旗弧线（`_CornerArcsPainter`） |
+| 图标 | `assets/icon/welcome_icon.png`，88×88；呼吸辉光（`_BreathingIcon`，2.6s repeat-reverse，随 overlay 卸载停表）；背后球场线稿：中圈双同心圆 + 横贯中线两端渐隐（`_PitchMarkPainter`，溢出绘制，外层 Stack `Clip.none`） |
+| 标题 / 副标题 | 词标 `_Wordmark`：`assets/icon/ffwc_wordmark.png`（AI 生成 Logo，760×272 黑底图，自带三色光晕 + 五边形「0」+ 三国色下划弧），显示宽 264，key `welcome-wordmark`（**测试定位锚点**）/ `一手掌握世界杯赛程信息`（`white60`，14px） |
+| 主办国 / 数据 | `CAN · MEX · USA`（发光色点 + 代码，`_HostNation`）；`6.11 – 7.19 · 48 队 · 104 场 · 16 城` |
+| 按钮 | 白底黑字「开始使用」，`GestureDetector + Container`，168×46，圆角 23，白色溢光；key `welcome-start-button` |
+| 淡入 | 整页 `_fade.forward()` **300ms** `easeInOut`；内容 6 段瀑布式入场（`_intro` 1200ms，交叠 `Interval` + 淡入上移，一次性） |
 | 退出 | 点按钮 → overlay 整页 `_fade.reverse()`（300ms）→ `_done = true` 移除 overlay，露出底层 `MyApp`。**勿** `return widget.child` 换树 |
 | **⚠️ 禁忌** | **不能用 `Scaffold` / `ElevatedButton`**（无 MaterialApp 祖先）；**勿**仅内容参与淡出而把黑底留在外面（会黑屏过渡） |
 | 回归测试 | `test/welcome_page_test.dart`（整页叠化进首页、不 remount） |
@@ -213,7 +214,7 @@
 |---|---|---|
 | 赛程 `/schedule` | `ScheduleDayStrip` 或搜索栏（互斥，`AnimatedSize`） | `TabBarView` 三子 Tab 列表 / `ScheduleSearchResults` |
 | 小组详情 `/group/:name` | 积分榜 `GroupTable` 卡片 | `SectionTitle('赛程')` + 比赛列表 |
-| 球队详情 `/team/:id` | 国旗 + 小组 / FIFA 排名 | 「赛程」、比赛、「出战名单」、26 人 |
+| 球队详情 `/team/:id` | 国旗 + 小组 / FIFA 排名 | 「赛程」、比赛、「出战名单」、26 人；全页背景：国家队队徽水印（`assets/nation_logo/<fifaCode>.webp` 48 队，`Opacity 0.06`、宽 78%、居中偏上、`IgnorePointer`，缺资产时 `errorBuilder` 静默退化） |
 
 ## 刷新
 

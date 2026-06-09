@@ -5,6 +5,7 @@ import 'package:worldcup_tracker/features/splash/welcome_page.dart';
 void main() {
   const homeKey = Key('home-page');
   const startButtonKey = Key('welcome-start-button');
+  const wordmarkKey = Key('welcome-wordmark');
 
   testWidgets('fades entire welcome overlay into home page', (tester) async {
     var mountCount = 0;
@@ -19,7 +20,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
 
-    expect(find.text('FFWC2026'), findsOneWidget);
+    expect(find.byKey(wordmarkKey), findsOneWidget);
     expect(_homeIsBlocked(homeKey), isTrue);
     expect(mountCount, 1);
 
@@ -27,7 +28,7 @@ void main() {
     await tester.pump();
     await tester.pumpAndSettle();
 
-    expect(find.text('FFWC2026'), findsNothing);
+    expect(find.byKey(wordmarkKey), findsNothing);
     expect(_homeIsBlocked(homeKey), isFalse);
     expect(mountCount, 1);
   });

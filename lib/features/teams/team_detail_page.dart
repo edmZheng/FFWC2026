@@ -47,78 +47,105 @@ class TeamDetailPage extends ConsumerWidget {
               ref.read(followedTeamsProvider.notifier).toggle(teamId),
         ),
       ],
-      body: DetailFixedHeaderBody(
-        header: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          child: _TeamHeader(
-            team: team,
-            rankingRank: ranking?.rank,
-          ),
-        ),
-        builder: (topInset) => RefreshIndicator(
-          onRefresh: () => ref.read(worldCupDataProvider.notifier).refresh(),
-          child: ListView(
-            clipBehavior: Clip.none,
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.fromLTRB(16, topInset, 16, 24),
-            children: [
-              const SectionTitle('赛程'),
-              matchesAsync.when(
-                skipLoadingOnReload: true,
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Text(e.toString()),
-                data: (matches) {
-                  final myMatches = matches
-                      .where(
-                        (m) =>
-                            m.isConfirmed &&
-                            (m.homeTeamId == teamId || m.awayTeamId == teamId),
-                      )
-                      .toList();
-                  if (myMatches.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.all(8),
-                      child: Text('尚无已确定的赛程'),
-                    );
-                  }
-                  final kickoffTexts = KickoffTimeResolver.formatMap(
-                      myMatches, kickoffUtcMap(kickoffMap));
-                  return Column(
-                    children: myMatches
-                        .map(
-                          (m) => MatchTile(
-                            match: m,
-                            kickoffText: kickoffTexts[m.id] ?? '时间待定',
-                          ),
-                        )
-                        .toList(),
-                  );
-                },
-              ),
-              const Divider(height: 32),
-              const SectionTitle('出战名单'),
-              squadAsync.when(
-                loading: () => const Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Center(child: CircularProgressIndicator()),
+      body: Stack(
+        children: [
+          // 国家队队徽水印：隐约可见的半透明背景，不参与交互与滚动。
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: 0.06,
+                child: Align(
+                  alignment: const Alignment(0, -0.2),
+                  child: FractionallySizedBox(
+                    widthFactor: 0.78,
+                    child: Image.asset(
+                      'assets/nation_logo/${team.fifaCode}.webp',
+                      fit: BoxFit.contain,
+                      // 个别球队无队徽资产时静默退化为纯背景
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    ),
+                  ),
                 ),
-                error: (e, _) => Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Text('名单加载失败：$e'),
-                ),
-                data: (players) {
-                  if (players.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.all(8),
-                      child: Text('暂无该队名单数据'),
-                    );
-                  }
-                  return _SquadList(players: players);
-                },
               ),
-            ],
+            ),
           ),
-        ),
+          DetailFixedHeaderBody(
+            header: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: _TeamHeader(
+                team: team,
+                rankingRank: ranking?.rank,
+              ),
+            ),
+            builder: (topInset) => RefreshIndicator(
+              onRefresh: () =>
+                  ref.read(worldCupDataProvider.notifier).refresh(),
+              child: ListView(
+                clipBehavior: Clip.none,
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(16, topInset, 16, 24),
+                children: [
+                  const SectionTitle('赛程'),
+                  matchesAsync.when(
+                    skipLoadingOnReload: true,
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => Text(e.toString()),
+                    data: (matches) {
+                      final myMatches = matches
+                          .where(
+                            (m) =>
+                                m.isConfirmed &&
+                                (m.homeTeamId == teamId ||
+                                    m.awayTeamId == teamId),
+                          )
+                          .toList();
+                      if (myMatches.isEmpty) {
+                        return const Padding(
+                          padding: EdgeInsets.all(8),
+                          child: Text('尚无已确定的赛程'),
+                        );
+                      }
+                      final kickoffTexts = KickoffTimeResolver.formatMap(
+                          myMatches, kickoffUtcMap(kickoffMap));
+                      return Column(
+                        children: myMatches
+                            .map(
+                              (m) => MatchTile(
+                                match: m,
+                                kickoffText: kickoffTexts[m.id] ?? '时间待定',
+                              ),
+                            )
+                            .toList(),
+                      );
+                    },
+                  ),
+                  const Divider(height: 32),
+                  const SectionTitle('出战名单'),
+                  squadAsync.when(
+                    loading: () => const Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                    error: (e, _) => Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Text('名单加载失败：$e'),
+                    ),
+                    data: (players) {
+                      if (players.isEmpty) {
+                        return const Padding(
+                          padding: EdgeInsets.all(8),
+                          child: Text('暂无该队名单数据'),
+                        );
+                      }
+                      return _SquadList(players: players);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
