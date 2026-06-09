@@ -85,14 +85,6 @@ extension _Nullable<T> on T? {
   T? flatMap(T? Function(T) f) => this == null ? null : f(this as T);
 }
 
-final matchByIdProvider = Provider.family<Match?, String>((ref, id) {
-  return ref
-      .watch(matchesProvider)
-      .whenData((ms) => ms.where((m) => m.id == id).firstOrNull)
-      .valueOrNull
-      .flatMap((m) => m);
-});
-
 final teamByIdProvider = Provider.family<Team?, String>((ref, id) {
   return ref
       .watch(teamsProvider)

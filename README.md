@@ -1,15 +1,11 @@
 # FFWC2026-随手浏览实时世界杯赛程、积分榜信息
 
-2026 国际足联世界杯赛程追踪 App（Flutter）。桌面安装名 **FFWC2026**。全中文界面，离线可用，首发名单通过 Cloudflare Worker 代理获取。
-
 ## 功能
 
-- **赛程**：48 队 × 104 场；子 Tab **关注 / 赛中·未赛 / 完赛**（默认「赛中·未赛」）；左上 **赛历**、右上 **搜索**（均 `AnimatedSize` 下推，互斥展开；赛历高亮随当前子 Tab）；按北京时间筛当日；搜索支持球队名、球员名；**开赛时间统一北京时间**（UTC+8）
+- **赛程**：48 队 × 104 场；子 Tab **关注 / 赛中·未赛 / 完赛**（默认「赛中·未赛」）；左上 **赛历**、右上 **搜索**（`DetailFixedHeaderBody` 顶栏叠列表，`AnimatedSize` 互斥展开；赛历高亮随当前子 Tab）；按北京时间筛当日；搜索支持球队名、球员名；**开赛时间统一北京时间**（UTC+8）
 - **积分榜**：12 个小组排名表；AppBar 右上 **官方规则**（`help_outline`）→ 2026 赛制与排名规则全文
 - **球队**：**关注**（爱心，持久化本地）；宫格已关注置顶 + 角标；详情顶栏队徽 + 小组 / FIFA 排名；**赛程**、**出战名单**（26 人，中文名 + 队长标）
-- **首发名单**：单场比赛详情页展示双方首发 + 替补 + 阵型，赛前 30-60 分钟自动出现
-- **直播跟分**：有进行中比赛时全局每 30 秒刷新赛程 API，赛程卡与详情比分自动更新（需可访问 worldcup26.ir）
-- **日历提醒**：未开赛比赛详情右上铃铛，一键加入系统日历（开赛前 1 小时提醒）
+- **直播跟分**：有进行中比赛时全局每 30 秒刷新赛程 API，赛程卡与相关列表比分自动更新（需可访问 worldcup26.ir）
 - **场馆**：16 座宫格 + 详情；中文赛事实名（`ZhCn` 按场馆 id 映射）+ 详情「球场常用名」；宫格封面 PNG 插画 + 底部中文条遮盖图上英文名（`StadiumCover` / `stadium_photos.dart`）
 - **离线优先**：网络不可用回退打包资产 JSON，App 始终可打开
 - **首次启动**：封面视频（播完 350ms 淡出）→ 欢迎页「开始使用」（300ms 叠化进首页）→ 主界面（仅 key `ffwc_launched_v1` 首次写入前；验证须清除应用数据或卸载重装）
@@ -23,9 +19,7 @@
 | HTTP | `dio` |
 | 本地缓存 | `shared_preferences`（SWR 模式，5 分钟过期） |
 | 图片 | `cached_network_image` |
-| 系统日历 | `device_calendar`（比赛详情写入提醒） |
-| 主题 / 字体 | Mono 炭蓝亮/暗双模（H=225）+ 跟随系统；Source Sans 3 |
-| Lineups 后端代理 | Cloudflare Worker + KV 缓存（见 [cf-worker/](cf-worker/)） |
+| 主题 / 字体 | Mono 炭蓝亮/暗双模（H=225）+ 跟随系统；Source Sans 3；Shell 页 `ShellHeroScaffold` 世界杯色块头图 |
 
 ## 运行 / 构建
 
@@ -51,10 +45,9 @@ flutter analyze
 | 赛程 / 比分 / 球队 / 球场 / 小组 | `https://worldcup26.ir`（无鉴权 GET） | `dio` 直连，SWR 缓存 |
 | 26 人大名单（球员姓名 + 中文名 + 位置） | Wikipedia 抓取后预置 | `assets/data/squads.json` |
 | FIFA 男足世界排名 | 手工维护（FIFA/Coca-Cola 月度更新） | `assets/data/fifa_rankings.json` |
-| 首发 / 替补 / 阵型 | Highlightly Soccer API（Basic Free） | Cloudflare Worker 代理 + KV 缓存 24h |
-| worldcup26 ↔ Highlightly 赛事 ID 映射 + UTC 开赛时间 | 一次性脚本拼接 | `assets/data/match_id_map.json` |
+| worldcup26 赛事 UTC 开赛时间（赛历/排序） | 一次性脚本拼接 | `assets/data/match_id_map.json` |
 
-> 直连 `worldcup26.ir` 需墙外或加速。首发数据走 Worker，国内访问稳定。
+> 直连 `worldcup26.ir` 需墙外或加速。`cf-worker/` 仍保留 Highlightly lineups 代理，当前 Flutter 端未接入。
 
 ## 项目结构
 
@@ -66,7 +59,6 @@ lib/
 │   ├── cache/                               # CacheStore（SWR）
 │   ├── l10n/zh_cn.dart                      # 球队/球场中文名映射
 │   ├── stadium/stadium_photos.dart          # 本地球场插画映射
-│   ├── calendar/match_calendar_reminder.dart # 系统日历 + 赛前提醒
 │   ├── live/                                # 直播跟分 provider + 轮询间隔
 │   ├── infra/                               # SharedPreferences / CacheStore / ApiClient providers
 │   ├── constants/app_info.dart              # 显示名 FFWC2026
@@ -74,25 +66,23 @@ lib/
 │   ├── theme/                               # AppTheme + mono_palette（炭蓝双模）
 │   └── utils/                               # coerce, match_time, match_calendar, kickoff_time_resolver, teams_grid_sort, flag_url
 ├── data/
-│   ├── models/                              # Match / Team / Stadium / GroupStanding / Player / Lineup
+│   ├── models/                              # Match / Team / Stadium / GroupStanding / Player
 │   └── repositories/
 │       ├── worldcup_repository.dart         # 主数据 facade
 │       ├── worldcup/                        # WorldCupDataPolicy + WorldCupDataAssembler
 │       ├── worldcup/providers.dart          # 主数据 providers + selectors
 │       ├── followed_teams/                  # 关注球队 store + provider
-│       ├── lineups/                         # match_id_map + kickoffUtc + lineup providers
-│       ├── lineup/                          # LineupMapper + LineupClient + result
-│       ├── lineup_repository.dart           # Worker → Highlightly /lineups facade
+│       ├── match_id_map/                    # kickoffUtc map provider
 │       ├── rankings/providers.dart          # squads + FIFA rankings providers
 │       ├── squad_repository.dart            # 26 人名单（assets 离线）
 │       ├── ranking_repository.dart          # FIFA 排名（assets 离线）
-│       └── match_id_map_repository.dart     # worldcup26 → Highlightly + UTC
+│       └── match_id_map_repository.dart     # worldcup26 id → UTC 开赛时间
 ├── features/
 │   ├── schedule/                            # schedule_page / day_strip / search_panel / search_index / providers
 │   │   └── state/                           # 赛程页 UI state + visible matches view model
 │   ├── splash/                              # SplashScreen + WelcomePage（首次启动）
-│   └── …                                    # standings（含 world_cup_rules_page）/ teams / stadiums / about / match_detail
-└── shared/widgets/                          # AppBarTitleImage / MatchTile / CapsuleNavBar / EdgeProximityScale 等
+│   └── …                                    # standings（含 world_cup_rules_page）/ teams / stadiums / about
+└── shared/widgets/                          # ShellHeroScaffold / WorldCupHeroBackground / ShellTabBar / MatchTile / CapsuleNavBar 等
 
 UI 约定见 [docs/UI.md](docs/UI.md)。
 

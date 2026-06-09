@@ -45,11 +45,6 @@ class StadiumCover extends StatelessWidget {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: theme.cardColor,
-                border: Border(
-                  top: BorderSide(
-                    color: theme.dividerColor.withValues(alpha: 0.35),
-                  ),
-                ),
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),

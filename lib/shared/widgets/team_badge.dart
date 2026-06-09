@@ -94,7 +94,6 @@ class _TeamBadgeState extends State<TeamBadge> {
           decoration: BoxDecoration(
             color: cs.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: cs.outlineVariant, width: 1),
           ),
           child: Icon(
             Icons.sports_soccer,

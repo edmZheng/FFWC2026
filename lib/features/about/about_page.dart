@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import '../../core/theme/mono_palette.dart';
 import '../../shared/widgets/app_bar_title_image.dart';
 import '../../shared/widgets/capsule_nav_bar.dart';
+import '../../shared/widgets/shell_hero_scaffold.dart';
+import '../../shared/widgets/world_cup_hero_skin.dart';
 
 class AboutPage extends StatefulWidget {
   const AboutPage({super.key});
@@ -48,11 +50,14 @@ class _AboutPageState extends State<AboutPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final mono = Theme.of(context).extension<MonoTokens>() ?? MonoTokens.dark;
+    final mono = Theme.of(context).extension<MonoTokens>() ?? MonoTokens.of(context);
     final bottom = CapsuleNavMetrics.bottomInset(context) + 16;
 
-    return Scaffold(
+    return ShellHeroScaffold(
+      tab: WorldCupTab.about,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         centerTitle: true,
         title: AppBarTitleImage.about(onTap: _scrollToTop),
       ),
@@ -65,7 +70,7 @@ class _AboutPageState extends State<AboutPage> {
           const SizedBox(height: 16),
 
           // ── 实时数据来源 ──────────────────────────────
-          _SectionLabel(label: '本应用实时数据来自以下开源接口', cs: cs),
+          _SectionLabel(label: '本应用实时数据来自以下开源接口', mono: mono),
           const SizedBox(height: 8),
           _InfoCard(
             mono: mono,
@@ -75,21 +80,14 @@ class _AboutPageState extends State<AboutPage> {
                 icon: Icons.code_rounded,
                 title: 'rezarahiminia/worldcup2026',
                 subtitle: '赛程 · 比分 · 球队 · 场馆  |  GitHub 开源项目',
-                cs: cs,
-              ),
-              _Divider(cs: cs),
-              _DataRow(
-                icon: Icons.sports_soccer_rounded,
-                title: 'Highlightly Soccer API',
-                subtitle: '首发阵容 · 阵型  |  Basic Free 接口',
-                cs: cs,
+                mono: mono,
               ),
             ],
           ),
           const SizedBox(height: 16),
 
           // ── 联系 ─────────────────────────────────────
-          _SectionLabel(label: '联系', cs: cs),
+          _SectionLabel(label: '联系', mono: mono),
           const SizedBox(height: 8),
           _InfoCard(
             mono: mono,
@@ -99,16 +97,16 @@ class _AboutPageState extends State<AboutPage> {
                 icon: Icons.mail_outline_rounded,
                 label: '反馈邮箱',
                 value: _email,
-                cs: cs,
+                mono: mono,
                 onTap: () => _copyToClipboard(context, _email, '邮箱地址'),
               ),
-              _Divider(cs: cs),
+              _Divider(mono: mono),
               _TapRow(
                 icon: Icons.link_rounded,
                 imagePath: 'assets/icon/github.png',
                 label: '项目地址',
                 value: 'edmZheng/FFWC2026',
-                cs: cs,
+                mono: mono,
                 onTap: () => _copyToClipboard(context, _projectUrl, '项目链接'),
               ),
             ],
@@ -116,7 +114,7 @@ class _AboutPageState extends State<AboutPage> {
           const SizedBox(height: 16),
 
           // ── 隐私说明 ──────────────────────────────────
-          _SectionLabel(label: '隐私说明', cs: cs),
+          _SectionLabel(label: '隐私说明', mono: mono),
           const SizedBox(height: 8),
           _InfoCard(
             mono: mono,
@@ -125,11 +123,10 @@ class _AboutPageState extends State<AboutPage> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 child: Text(
-                  'FFWC2026 不收集任何个人信息。赛程数据由第三方开源接口提供；'
-                  '首发阵容通过 Cloudflare Worker 转发自 Highlightly API，'
+                  'FFWC2026 不收集任何个人信息。赛程数据由第三方开源接口提供，'
                   '所有数据仅在本地缓存，不会上传至任何服务器。',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: cs.onSurfaceVariant,
+                        color: mono.textPrimary,
                         height: 1.6,
                       ),
                 ),
@@ -153,10 +150,9 @@ class _HeaderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-      decoration: BoxDecoration(
+      decoration: mono.surfaceDecoration(
         color: mono.glassFill,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: mono.glassBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -188,13 +184,14 @@ class _HeaderCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.5,
+                            color: mono.textPrimary,
                           ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '随手浏览实时世界杯赛程、积分榜信息',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: cs.onSurfaceVariant,
+                            color: mono.textSecondary,
                             height: 1.4,
                           ),
                     ),
@@ -211,7 +208,7 @@ class _HeaderCard extends StatelessWidget {
               Text(
                 '开发者：郑伟男（EDMZheng）',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: cs.onSurfaceVariant,
+                      color: mono.textSecondary,
                     ),
               ),
             ],
@@ -223,9 +220,9 @@ class _HeaderCard extends StatelessWidget {
 }
 
 class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.label, required this.cs});
+  const _SectionLabel({required this.label, required this.mono});
   final String label;
-  final ColorScheme cs;
+  final MonoTokens mono;
 
   @override
   Widget build(BuildContext context) {
@@ -234,7 +231,7 @@ class _SectionLabel extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: cs.onSurfaceVariant,
+              color: mono.textSecondary,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.8,
             ),
@@ -252,10 +249,9 @@ class _InfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+      decoration: mono.surfaceDecoration(
+        color: mono.cardFill,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: mono.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,12 +266,12 @@ class _DataRow extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
-    required this.cs,
+    required this.mono,
   });
   final IconData icon;
   final String title;
   final String subtitle;
-  final ColorScheme cs;
+  final MonoTokens mono;
 
   @override
   Widget build(BuildContext context) {
@@ -284,7 +280,7 @@ class _DataRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: cs.onSurfaceVariant),
+          Icon(icon, size: 18, color: mono.textSecondary),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -294,13 +290,14 @@ class _DataRow extends StatelessWidget {
                   title,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
+                        color: mono.textPrimary,
                       ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: cs.onSurfaceVariant,
+                        color: mono.textSecondary,
                       ),
                 ),
               ],
@@ -317,7 +314,7 @@ class _TapRow extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
-    required this.cs,
+    required this.mono,
     required this.onTap,
     this.imagePath,
   });
@@ -325,12 +322,11 @@ class _TapRow extends StatelessWidget {
   final String? imagePath;
   final String label;
   final String value;
-  final ColorScheme cs;
+  final MonoTokens mono;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
@@ -343,12 +339,10 @@ class _TapRow extends StatelessWidget {
                 imagePath!,
                 width: 18,
                 height: 18,
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.6)
-                    : cs.onSurfaceVariant,
+                color: mono.textSecondary,
               )
             else
-              Icon(icon, size: 18, color: cs.onSurfaceVariant),
+              Icon(icon, size: 18, color: mono.textSecondary),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -357,7 +351,7 @@ class _TapRow extends StatelessWidget {
                   Text(
                     label,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: cs.onSurfaceVariant,
+                          color: mono.textSecondary,
                         ),
                   ),
                   const SizedBox(height: 2),
@@ -365,12 +359,14 @@ class _TapRow extends StatelessWidget {
                     value,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w500,
+                          color: mono.textPrimary,
                         ),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.copy_rounded, size: 14, color: cs.onSurfaceVariant.withValues(alpha: 0.6)),
+            Icon(Icons.copy_rounded,
+                size: 14, color: mono.textSecondary.withValues(alpha: 0.75)),
           ],
         ),
       ),
@@ -379,8 +375,8 @@ class _TapRow extends StatelessWidget {
 }
 
 class _Divider extends StatelessWidget {
-  const _Divider({required this.cs});
-  final ColorScheme cs;
+  const _Divider({required this.mono});
+  final MonoTokens mono;
 
   @override
   Widget build(BuildContext context) {
@@ -389,7 +385,7 @@ class _Divider extends StatelessWidget {
       thickness: 1,
       indent: 46,
       endIndent: 0,
-      color: cs.outlineVariant.withValues(alpha: 0.5),
+      color: mono.textSecondary.withValues(alpha: 0.35),
     );
   }
 }

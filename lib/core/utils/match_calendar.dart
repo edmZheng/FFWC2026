@@ -34,6 +34,12 @@ DateTime beijingCalendarDayForMatch(
   return DateTime(0);
 }
 
+/// 赛程日分组标题：6月11日 周三
+String formatBeijingDayHeader(DateTime day) {
+  const weekdays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+  return '${day.month}月${day.day}日 ${weekdays[day.weekday - 1]}';
+}
+
 DateTime kickoffSortInstant(Match match, {DateTime? kickoffUtc}) {
   if (kickoffUtc != null) return MatchTime.toBeijing(kickoffUtc);
   return match.localDate ?? DateTime(9999);

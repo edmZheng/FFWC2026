@@ -6,7 +6,6 @@ import 'core/constants/app_info.dart';
 import 'core/nav/schedule_scroll_nav.dart';
 import 'core/theme/app_theme.dart';
 import 'features/about/about_page.dart';
-import 'features/match_detail/match_detail_page.dart';
 import 'features/schedule/schedule_page.dart';
 import 'features/stadiums/stadium_detail_page.dart';
 import 'features/stadiums/stadiums_page.dart';
@@ -53,12 +52,6 @@ final router = GoRouter(
       ],
     ),
     // Detail routes rendered above the shell (full screen)
-    GoRoute(
-      path: '/match/:id',
-      parentNavigatorKey: _rootNavKey,
-      builder: (_, state) =>
-          MatchDetailPage(matchId: state.pathParameters['id']!),
-    ),
     GoRoute(
       path: '/team/:id',
       parentNavigatorKey: _rootNavKey,
@@ -138,6 +131,7 @@ class _ScaffoldWithNav extends ConsumerWidget {
     final navBottom = CapsuleNavMetrics.navMarginB + bottomPad;
 
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       resizeToAvoidBottomInset: false,
       extendBody: true,
       body: Stack(

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'glass_icon_button.dart';
+
 /// 全屏子页脚手架：自动返回按钮，支持系统返回键与 Android 侧滑。
 class DetailScaffold extends StatelessWidget {
   const DetailScaffold({
@@ -25,7 +27,7 @@ class DetailScaffold extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           leading: canPop
-              ? IconButton(
+              ? GlassIconButton(
                   icon: const Icon(Icons.arrow_back),
                   tooltip: '返回',
                   onPressed: () => context.pop(),

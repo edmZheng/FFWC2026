@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
 import '../../core/utils/kickoff_time_resolver.dart';
 import '../../data/models/match.dart';
-import '../../data/repositories/lineups/providers.dart';
+import '../../data/repositories/match_id_map/providers.dart';
 import '../../data/repositories/match_id_map_repository.dart';
 import '../../data/repositories/worldcup/providers.dart';
 import '../../shared/widgets/detail_fixed_header_body.dart';
@@ -93,7 +91,6 @@ class GroupDetailPage extends ConsumerWidget {
                       return MatchTile(
                         match: m,
                         kickoffText: kickoffTexts[m.id] ?? '时间待定',
-                        onTap: () => context.push('/match/${m.id}'),
                       );
                     },
                   );

@@ -125,4 +125,11 @@ void main() {
       DateTime(2025, 1, 3),
     );
   });
+
+  test('formatBeijingDayHeader includes weekday', () {
+    expect(
+      formatBeijingDayHeader(DateTime(2026, 6, 11)),
+      '6月11日 周四',
+    );
+  });
 }

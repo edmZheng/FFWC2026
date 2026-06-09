@@ -9,7 +9,7 @@
 - `app.dart` → `MaterialApp.router` + `go_router` + `ThemeMode.system`。Tab 页走 `ShellRoute`；详情页用 `parentNavigatorKey: _rootNavKey`（全屏）。
 - `providers.dart` → 兼容导出 facade；实际 provider 按能力拆分到 `core/infra`、`core/live`、`data/repositories/**/providers.dart`、`features/**/providers.dart`。
 - `core/` 基础设施，`data/` 模型+仓库，`features/` 按页面，`shared/widgets/` 复用组件。
-- `cf-worker/` 独立的 Cloudflare Worker 项目（**不是** Flutter 源码），代理 Highlightly lineups 并 KV 缓存 24h。
+- `cf-worker/` 独立的 Cloudflare Worker 项目（**不是** Flutter 源码），保留 Highlightly lineups 代理；**当前 Flutter 端未接入**。
 - `scripts/` 开发期一次性脚本（Python）：build_squads / fetch_squad_meta / refine_zh / build_match_id_map 等。
 
 ## 数据流（改取数逻辑前必读）
@@ -24,12 +24,7 @@
 **辅助数据**（无 network 层，纯 asset）：
 - `squads.json` → `SquadRepository`：26 人大名单 + 中文名 + 头像 URL（本版本 UI 不用头像）
 - `fifa_rankings.json` → `RankingRepository.byCode`：FIFA 三字母 code → rank + points
-- `match_id_map.json` → `MatchIdMapRepository`：worldcup26.ir id → `{hl: int, utc: DateTime}`，**仅 group stage 72 场覆盖**，淘汰赛敲钉后用 `scripts/build_match_id_map.py` 重建
-
-**Lineups**（外部 API，走代理）：
-- Flutter `LineupMapper`：worldcup26 match id → Highlightly id；`LineupClient`：只负责 Worker HTTP；`LineupRepository`：折叠为现有 `forMatch()` 兼容 API，并保留显式 lookup result
-- Flutter → `https://ffwc-proxy.randomdre13.workers.dev/lineups/{highlightlyId}` → Worker KV 查 → 命中返回 / 未命中转发到 Highlightly + 写 KV 24h
-- 同一场比赛任意数量用户访问，上游只算 1 次（24h 内）。Highlightly Free = 100 req/天，赛事全程理论上游 < 300 次
+- `match_id_map.json` → `MatchIdMapRepository` / `match_id_map/providers.dart`：worldcup26.ir id → UTC 开赛时间（赛历高亮、排序、`KickoffTimeResolver`）；**仅 group stage 72 场覆盖**，淘汰赛敲钉后用 `scripts/build_match_id_map.py` 重建
 
 ## 命令速查
 
@@ -70,7 +65,6 @@ python generate_launcher_icons.py  # 从 assets/icon/app_icon.png 生成 Android
 | `/teams` | TeamsPage | shell |
 | `/stadiums` | StadiumsPage | shell |
 | `/about` | AboutPage | shell |
-| `/match/:id` | MatchDetailPage | root（全屏） |
 | `/team/:id` | TeamDetailPage | root（全屏） |
 | `/stadium/:id` | StadiumDetailPage | root（全屏） |
 | `/group/:name` | GroupDetailPage | root（全屏） |
@@ -81,7 +75,7 @@ python generate_launcher_icons.py  # 从 assets/icon/app_icon.png 生成 Android
 ## 约定与红线
 
 - **UI 文案一律中文**（面向中文用户）。新增/改 UI 字符串保持中文。
-- **比赛时间显示用北京时间**（UTC+8 硬编码，**不**走 `DateTime.toLocal()`）。用 `KickoffTimeResolver` 统一 display / 赛历 / 排序 / 设备日历；底层优先 `kickoffUtcByMatchIdProvider` + `MatchTime.formatBeijing`，映射缺失才回退 `match.localDate`（场馆本地时间）。
+- **比赛时间显示用北京时间**（UTC+8 硬编码，**不**走 `DateTime.toLocal()`）。用 `KickoffTimeResolver` 统一展示 / 赛历 / 排序；底层优先 `kickoffUtcByMatchIdProvider` + `MatchTime.formatBeijing`，映射缺失才回退 `match.localDate`（场馆本地时间）。
 - **球员中文名**：`squads.json` 已预处理为简体大陆约定俗成译名。新增球员先查 `scripts/zh_overrides.py` 字典是否覆盖；港台音译（朗拿度、卡斯米路等）必须在 override 里替换。
 - **国旗只能用 PNG**：`flagcdn` 默认 SVG，`CachedNetworkImage` 渲染不了。`TeamBadge` 用 `iso2` 拼 `https://flagcdn.com/w80/{iso2}.png`，无 iso2 才回退 `flagUrl`。
 - **新增数据字段**两边对齐：API 结构 + `assets/data/*.json` 离线副本 + 对应 model `fromJson`。
@@ -90,18 +84,19 @@ python generate_launcher_icons.py  # 从 assets/icon/app_icon.png 生成 Android
 - **分段标题**：用 `SectionTitle`，球队详情为「赛程」「出战名单」。
 - **Shell 底栏**：`CapsuleNavBar` 悬浮不占位；赛程 ~120px「回顶部」；离开赛程 Tab 须 `scheduleScrollNavProvider.reset()`，回 Tab 后 `SchedulePage` 首帧/`activate` 调 `_syncScrollNav()`（勿只靠 scroll listener）。Mono 炭蓝 + `ThemeMode.system`。
 - **Shell AppBar 标题**：五 Tab 用 `AppBarTitleImage` + `assets/titles/{games,rank,teams,stadium,about}.png`（默认高 30）；勿改回 `Text(AppInfo.displayName)`。换图须 Release 打包。`AppBarTitleImage` 有可选 `onTap` 回调，五 Tab 均已接入——点击标题图平滑滚回顶部（各页 `ScrollController.animateTo(0, 400ms, easeOutCubic)`；赛程页复用 `_scrollToTop(_tabController.index)`）。细则 [docs/UI.md](docs/UI.md) §Shell AppBar 标题图。
+- **Shell 色块头图**：五 Tab 页用 `ShellHeroScaffold`（`shell_hero_scaffold.dart`）+ `WorldCupHeroBackground`（`world_cup_hero_skin.dart`）；`AppBar` 须 `backgroundColor: Colors.transparent`、`scrolledUnderElevation: 0`（赛程页另设 `surfaceTintColor: Colors.transparent`）。色块画在 body 底层约 25% 屏高，**勿**在 AppBar 上叠 `flexibleSpace` 或撑高 `toolbarHeight`。切 Tab 由 `_HeroTabMemory` 520ms 插值；详情页勿用。新增 Tab 须补 `WorldCupTab` 与构图。细则 [docs/UI.md](docs/UI.md) §Shell 色块头图。
+- **Mono 卡片描边**：亮色 `MonoTokens.surfaceBorder` → 卡片/宫格 `0.5px` 细边、`Card` elevation `0`、`ColorScheme.surfaceTint` 透明（**勿**用 M3 elevation 着色当阴影）。**赛程子 Tab**（`ShellTabBar`）**勿**套 `surfaceDecoration` / 上下边框；`dividerHeight: 0` + `dividerColor: Colors.transparent`（全局 `tabBarTheme` 同步）。细则 [docs/UI.md](docs/UI.md) §Mono 卡片与描边。
 - **无 Material 涟漪**：`AppTheme` 全局 `NoSplash.splashFactory`（`TabBar`/`IconButton`/`InkWell` 等同理）；底栏仍用 `GestureDetector`。细则 [docs/UI.md](docs/UI.md)。
-- **赛程子 Tab**：`关注 | 赛中/未赛 | 完赛`；默认 `initialIndex: 1`。搜索：`schedule_search_panel.dart` 内嵌 `AnimatedSize`，与赛历互斥，**勿** `showSearch` 全屏。
-- **赛事日历**（无独立路由）：`SchedulePage` 只编排控制器/滚动；赛历 ⇄ 搜索状态与可见比赛列表在 `features/schedule/state/schedule_page_state.dart`。左上 `ScheduleDayStrip` + `core/utils/match_calendar.dart`；`AnimatedSize` 下推列表；高亮/「X场」随子 Tab（关注=关注场次日，赛中·未赛=未完结，完赛=已完赛）；点日按北京时间筛三 Tab。**勿** `/schedule/calendar` 全屏。
-- **离屏卡片动效**：默认 `EdgeProximityScale(vertical)` 均匀缩小（1.0→0.88，约 1/3 出屏）；列表/宫格/赛程 `TabBarView` 须 `Clip.none`；短列表不缩放。**schedule 页特例**：顶部走 `EdgeProximityScale(verticalTopOnly)` 只缩；底部走 `StackedEdgeFade`（`earlyTrigger=40dp` 提前触发、`maxDisplaceFactor=2.5`）硬停 + scale + alpha + 圆角 10→36 形成"压栈+残影"；sliver 必须用 `ZSortedListView`（反向 paint 修底部 z-order），**勿换回 `ListView.builder` / `CustomScrollView`**；`_MatchList` padding.bottom = `CapsuleNavMetrics.bottomInset + 8` 确保末尾卡片不被 TabBar 遮挡。`MatchTile.bottomFadeInset` 由调用方传入，null 时退回默认。细则 [docs/UI.md](docs/UI.md) §列表卡片动效。
+- **赛程子 Tab**：`ShellTabBar`（`shell_tab_bar.dart`）— `关注 | 赛中/未赛 | 完赛`；默认 `initialIndex: 1`。搜索：`schedule_search_panel.dart` 内嵌，与赛历互斥，**勿** `showSearch` 全屏。
+- **赛事日历**（无独立路由）：`SchedulePage` 只编排控制器/滚动；赛历 ⇄ 搜索状态与可见列表在 `features/schedule/state/schedule_page_state.dart`。赛历/搜索栏包在 `DetailFixedHeaderBody`（Stack 顶栏叠列表，`AnimatedSize` 展开收起）；**勿** `Column` 下推列表。`ScheduleDayStrip` + `core/utils/match_calendar.dart`；高亮/「X场」随子 Tab；点日按北京时间筛三 Tab。**勿** `/schedule/calendar` 全屏。
+- **离屏卡片动效**：默认 `EdgeProximityScale(vertical)` 均匀缩小（1.0→0.88，约 1/3 出屏）；列表/宫格/赛程 `TabBarView` 须 `Clip.none`；短列表不缩放。**schedule 页特例**：顶部走 `EdgeProximityScale(verticalTopOnly)` 只缩；底部走 `StackedEdgeFade`（`earlyTrigger=40dp` 提前触发、`maxDisplaceFactor=2.5`）硬停 + scale + alpha + 圆角 10→36 形成"压栈+残影"；sliver 必须用 `ZSortedListView`（反向 paint 修底部 z-order），**勿换回 `ListView.builder` / `CustomScrollView`**；`_MatchList` padding.top = `topInset + 8`、padding.bottom = `CapsuleNavMetrics.bottomInset + 8`。`MatchTile.bottomFadeInset` 由调用方传入，null 时退回默认。细则 [docs/UI.md](docs/UI.md) §列表卡片动效。
 - **关注球队**：Toggle 走 `followedTeamsProvider`；prefs key `followed_team_ids`（勿与 `cache_*` 混用）。宫格列表用 `teamsGridProvider`（已关注置顶），勿直接用 `teamsProvider`。`shared/widgets` 只收 `isFollowed/onToggle` props，不直接 watch provider。
-- **StatusChip 时间**：列表/详情 `showTime: false`；开赛时间在卡片 VS 下方与详情「赛事信息」。
-- **日历提醒**：未开赛且可解析开赛时间 → 详情 AppBar 铃铛 → `addMatchToDeviceCalendar`（`device_calendar`，赛前 60 分钟）；Android 须 `READ/WRITE_CALENDAR`（已写在 `AndroidManifest`）。无开赛时间则不显示铃铛。`_pickWritableCalendar` 两轮兜底：Pass 1 标准（`isReadOnly==false`）；Pass 2 忽略该标记——华为/荣耀设备所有日历均被错误上报为只读，Pass 2 按 default → 本地账户 → 首个有 ID 的顺序选，让实际写入决定真正可写性。
+- **赛程卡片 MatchTile**：顶行日期/轮次 + 右侧时间或状态；主行横向队徽·队名与居中比分；**勿**竖排队徽、底栏 `StatusChip`、左上角 live 圆点。细则 [docs/UI.md](docs/UI.md) §赛程卡片。
+- **赛程卡片不可点进详情**：`MatchTile` 当前不传 `onTap`；**勿**恢复 `/match/:id` 路由除非产品重新要求比赛详情页。
 - **宫格 + 关注角标**：球队 Card 内容 `Positioned.fill` 居中，角标单独 `Positioned`，避免国旗偏移。
-- **详情顶区**：小组/球队详情用 `DetailFixedHeaderBody`（顶区 Stack 最上层、无底线）；小组仅积分榜固定，「赛程」随滚。细则见 [docs/UI.md](docs/UI.md)。
+- **详情顶区**：`DetailFixedHeaderBody`（顶区 Stack 最上层、无底线）——小组/球队详情顶区固定；赛程赛历/搜索栏同组件。细则见 [docs/UI.md](docs/UI.md)。
 - **直播跟分**：`liveScoreSyncProvider`（`MyApp` 常驻）——存在 `MatchStatus.live` 时每 30s `worldCupDataProvider.refresh()`；赛程/积分榜/详情自动更新。`live_page` 未挂 Tab。
-- **HL_API_KEY 永远只在 Worker secret**：`wrangler secret put HL_API_KEY`，**不可**写入代码、`wrangler.toml`、git。轮换流程见 `cf-worker/README.md`。
-- **Highlightly 配额硬约束**：Free = 100 req/天，整届 WC ~300 次上游消耗。Worker KV TTL 24h 是配额保护，**不要**轻易缩短。
+- **HL_API_KEY 永远只在 Worker secret**（仅维护 `cf-worker/` 时）：`wrangler secret put HL_API_KEY`，**不可**写入代码、`wrangler.toml`、git。轮换流程见 `cf-worker/README.md`。
 - **match_id_map.json 覆盖范围**：72 场小组赛全覆盖，32 场淘汰赛是 worldcup26.ir 占位符（`Winner Group X`），未映射。淘汰赛对阵敲钉后跑 `build_match_id_map.py` 增量补。
 - **换启动图标**：改 `res/mipmap-*`（AS Image Asset）**或** 覆盖 `assets/icon/app_icon.png` 后跑 `generate_launcher_icons.py`；两条链路互斥，AS 改完勿盲目跑脚本。任一方式后须 **Release 打包 + 重装 APK**。
 - **场馆本地图**：16 座均为 `assets/stadiums/{id}.png` 插画；`_pngIds` 覆盖 `1`–`16`。换图只覆盖 PNG，勿同 id 并存 `.jpg`。

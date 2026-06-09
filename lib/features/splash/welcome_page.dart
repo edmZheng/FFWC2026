@@ -78,69 +78,75 @@ class _WelcomePageState extends State<WelcomePage>
   }
 
   Widget _buildContent() {
-    return Center(
+    return Align(
+      alignment: const Alignment(0, -0.12),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
+        padding: const EdgeInsets.symmetric(horizontal: 52),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 120,
-              height: 120,
+              width: 88,
+              height: 88,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.white54,
-                    blurRadius: 48,
-                    spreadRadius: 12,
+                    color: Color(0x33FFFFFF),
+                    blurRadius: 36,
+                    spreadRadius: 4,
                   ),
                 ],
               ),
               child: Image.asset(
                 'assets/icon/welcome_icon.png',
-                width: 120,
-                height: 120,
+                width: 88,
+                height: 88,
                 fit: BoxFit.contain,
               ),
             ),
-            const SizedBox(height: 36),
+            const SizedBox(height: 48),
             const Text(
               'FFWC2026',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 30,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 2,
+                fontSize: 28,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 3.2,
+                height: 1.1,
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 20),
             const Text(
               '一手掌握世界杯赛程信息',
               style: TextStyle(
-                color: Colors.white60,
-                fontSize: 15,
-                letterSpacing: 1,
+                color: Color(0x99FFFFFF),
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                letterSpacing: 1.6,
+                height: 1.5,
               ),
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 52),
+            const SizedBox(height: 72),
             GestureDetector(
               onTap: _onStart,
               child: Container(
                 key: const Key('welcome-start-button'),
-                width: 200,
-                height: 48,
+                width: 168,
+                height: 46,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(23),
                 ),
                 alignment: Alignment.center,
                 child: const Text(
                   '开始使用',
                   style: TextStyle(
                     color: Colors.black,
-                    fontSize: 16,
+                    fontSize: 15,
                     fontWeight: FontWeight.w600,
+                    letterSpacing: 1.2,
                   ),
                 ),
               ),

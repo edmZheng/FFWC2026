@@ -3,11 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/zh_cn.dart';
+import '../../core/theme/mono_palette.dart';
 import '../../providers.dart';
 import '../../shared/widgets/app_bar_title_image.dart';
 import '../../shared/widgets/capsule_nav_bar.dart';
 import '../../shared/widgets/edge_proximity_scale.dart';
 import '../../shared/widgets/stadium_cover.dart';
+import '../../shared/widgets/shell_hero_scaffold.dart';
+import '../../shared/widgets/world_cup_hero_skin.dart';
 
 class StadiumsPage extends ConsumerStatefulWidget {
   const StadiumsPage({super.key});
@@ -37,8 +40,13 @@ class _StadiumsPageState extends ConsumerState<StadiumsPage> {
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(stadiumsProvider);
-    return Scaffold(
-      appBar: AppBar(title: AppBarTitleImage.stadium(onTap: _scrollToTop)),
+    return ShellHeroScaffold(
+      tab: WorldCupTab.stadiums,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        title: AppBarTitleImage.stadium(onTap: _scrollToTop),
+      ),
       body: async.when(
         skipLoadingOnReload: true,
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -63,7 +71,9 @@ class _StadiumsPageState extends ConsumerState<StadiumsPage> {
             final s = stadiums[i];
             final name = ZhCn.stadiumName(s);
             final location = '${ZhCn.city(s)} · ${ZhCn.country(s)}';
+            final mono = MonoTokens.of(context);
             return EdgeProximityScale(
+              axis: EdgeScaleAxis.verticalTopOnly,
               child: InkWell(
               onTap: () => context.push('/stadium/${s.id}'),
               borderRadius: BorderRadius.circular(_gridCardRadius),
@@ -89,7 +99,9 @@ class _StadiumsPageState extends ConsumerState<StadiumsPage> {
                         alignment: Alignment.centerLeft,
                         child: Text(
                           location,
-                          style: Theme.of(context).textTheme.labelSmall,
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: mono.textSecondary,
+                              ),
                           maxLines: 1,
                           softWrap: false,
                         ),

@@ -45,15 +45,25 @@ class CapsuleNavBar extends StatelessWidget {
     final mono = Theme.of(context).extension<MonoTokens>() ?? MonoTokens.dark;
     final activeColor = cs.onSurface;
     final inactiveColor = cs.onSurfaceVariant;
+    final navShadow = Theme.of(context).brightness == Brightness.dark
+        ? mono.shadow
+        : mono.shadow.withValues(alpha: 0.22);
 
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: mono.shadow,
-            blurRadius: 20,
-            offset: const Offset(0, 6),
+            color: navShadow,
+            blurRadius: 36,
+            offset: const Offset(0, 12),
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: navShadow,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+            spreadRadius: -1,
           ),
         ],
       ),
@@ -65,7 +75,6 @@ class CapsuleNavBar extends StatelessWidget {
             decoration: BoxDecoration(
               color: mono.glassFill,
               borderRadius: BorderRadius.circular(32),
-              border: Border.all(color: mono.glassBorder, width: 1),
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -90,7 +99,7 @@ class CapsuleNavBar extends StatelessWidget {
                             height: 22,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(color: color, width: 1.5),
+                              color: cs.surface.withValues(alpha: 0.85),
                             ),
                             child: Icon(
                               Icons.arrow_upward_rounded,

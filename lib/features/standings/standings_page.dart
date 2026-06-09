@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/theme/mono_palette.dart';
 import '../../core/l10n/zh_cn.dart';
 import '../../data/models/group_standing.dart';
 import '../../providers.dart';
 import '../../shared/widgets/app_bar_title_image.dart';
+import '../../shared/widgets/glass_icon_button.dart';
 import '../../shared/widgets/capsule_nav_bar.dart';
 import '../../shared/widgets/edge_proximity_scale.dart';
 import '../../shared/widgets/team_badge.dart';
+import '../../shared/widgets/shell_hero_scaffold.dart';
+import '../../shared/widgets/world_cup_hero_skin.dart';
 
 class StandingsPage extends ConsumerStatefulWidget {
   const StandingsPage({super.key});
@@ -37,11 +41,14 @@ class _StandingsPageState extends ConsumerState<StandingsPage> {
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(standingsProvider);
-    return Scaffold(
+    return ShellHeroScaffold(
+      tab: WorldCupTab.standings,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         title: AppBarTitleImage.rank(onTap: _scrollToTop),
         actions: [
-          IconButton(
+          GlassIconButton(
             icon: const Icon(Icons.help_outline),
             tooltip: '官方规则',
             onPressed: () => context.push('/standings/rules'),
@@ -109,15 +116,17 @@ class _GroupPreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final mono = MonoTokens.of(context);
     final preview = standing.teams.take(4).toList();
 
     return EdgeProximityScale(
+      axis: EdgeScaleAxis.verticalTopOnly,
       child: InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
       child: Card(
         margin: EdgeInsets.zero,
+        clipBehavior: Clip.none,
         child: Padding(
           padding: const EdgeInsets.all(10),
           child: Column(
@@ -127,7 +136,7 @@ class _GroupPreviewCard extends StatelessWidget {
                 '${standing.groupName} 组',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: cs.onSurface,
+                      color: mono.textPrimary,
                     ),
               ),
               const SizedBox(height: 8),
@@ -136,7 +145,7 @@ class _GroupPreviewCard extends StatelessWidget {
                   children: [
                     for (var i = 0; i < preview.length; i++)
                       Expanded(
-                        child: _previewRow(context, i + 1, preview[i]),
+                        child: _previewRow(context, i + 1, preview[i], mono),
                       ),
                   ],
                 ),
@@ -149,7 +158,12 @@ class _GroupPreviewCard extends StatelessWidget {
     );
   }
 
-  Widget _previewRow(BuildContext context, int rank, TeamStanding s) {
+  Widget _previewRow(
+    BuildContext context,
+    int rank,
+    TeamStanding s,
+    MonoTokens mono,
+  ) {
     final name = ZhCn.teamNameEn(s.teamNameEn);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
@@ -159,7 +173,9 @@ class _GroupPreviewCard extends StatelessWidget {
             width: 16,
             child: Text(
               '$rank',
-              style: Theme.of(context).textTheme.labelSmall,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: mono.textSecondary,
+                  ),
             ),
           ),
           TeamBadge(
@@ -172,7 +188,9 @@ class _GroupPreviewCard extends StatelessWidget {
           Expanded(
             child: Text(
               name,
-              style: Theme.of(context).textTheme.labelSmall,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: mono.textPrimary,
+                  ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -181,7 +199,7 @@ class _GroupPreviewCard extends StatelessWidget {
             '${s.pts}',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.onSurface,
+                  color: mono.textPrimary,
                 ),
           ),
         ],

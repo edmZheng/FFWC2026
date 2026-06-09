@@ -195,10 +195,9 @@ class WorldCupRulesPage extends StatelessWidget {
   Widget _buildHeader(BuildContext context, ColorScheme cs, MonoTokens mono) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      decoration: BoxDecoration(
+      decoration: mono.surfaceDecoration(
         color: mono.glassFill,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: mono.glassBorder),
       ),
       child: Column(
         children: [
@@ -300,10 +299,9 @@ class _RuleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
+      decoration: mono.surfaceDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: mono.cardBorder),
       ),
       child: child,
     );

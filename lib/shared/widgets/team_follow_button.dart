@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'glass_icon_button.dart';
+
 /// 球队关注切换（爱心），用于详情页 AppBar 等。
 class TeamFollowButton extends StatelessWidget {
   const TeamFollowButton({
@@ -17,7 +19,7 @@ class TeamFollowButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return IconButton(
+    return GlassIconButton(
       tooltip: isFollowed ? '取消关注' : '关注球队',
       onPressed: onToggle,
       icon: Icon(

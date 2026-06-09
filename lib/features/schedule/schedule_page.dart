@@ -1,20 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
 import '../../core/nav/schedule_scroll_nav.dart';
 import '../../core/utils/kickoff_time_resolver.dart';
 import '../../data/models/match.dart';
 import '../../data/repositories/match_id_map_repository.dart';
-import '../../data/repositories/lineups/providers.dart';
+import '../../data/repositories/match_id_map/providers.dart';
 import '../../data/repositories/worldcup/providers.dart';
 import '../../shared/widgets/app_bar_title_image.dart';
+import '../../shared/widgets/glass_icon_button.dart';
+import '../../shared/widgets/shell_tab_bar.dart';
+import '../../shared/widgets/shell_hero_scaffold.dart';
+import '../../shared/widgets/world_cup_hero_skin.dart';
 import '../../shared/widgets/capsule_nav_bar.dart';
 import '../../shared/widgets/detail_fixed_header_body.dart';
 import '../../shared/widgets/match_tile.dart';
 import '../../shared/widgets/z_sorted_sliver_list.dart';
 import '../../data/repositories/followed_teams/providers.dart';
 import 'schedule_day_strip.dart';
+import 'schedule_day_header.dart';
+import 'schedule_list_entries.dart';
 import 'schedule_search_panel.dart';
 import 'state/schedule_page_state.dart';
 
@@ -135,10 +139,14 @@ class _SchedulePageState extends ConsumerState<SchedulePage>
     final hasFollowedTeams = ref.watch(followedTeamsProvider).isNotEmpty;
     final kickoffMap = kickoffUtcMap(ref.watch(matchIdMapProvider).valueOrNull);
 
-    return Scaffold(
+    return ShellHeroScaffold(
+      tab: WorldCupTab.schedule,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         centerTitle: true,
-        leading: IconButton(
+        leading: GlassIconButton(
           icon: Icon(
             _uiState.calendarOpen
                 ? Icons.calendar_month
@@ -151,7 +159,7 @@ class _SchedulePageState extends ConsumerState<SchedulePage>
           onTap: () => _scrollToTop(_tabController.index),
         ),
         actions: [
-          IconButton(
+          GlassIconButton(
             icon: Icon(
               _uiState.searchOpen ? Icons.search : Icons.search_outlined,
             ),
@@ -159,7 +167,7 @@ class _SchedulePageState extends ConsumerState<SchedulePage>
             onPressed: _toggleSearch,
           ),
         ],
-        bottom: TabBar(
+        bottom: ShellTabBar(
           controller: _tabController,
           tabs: const [
             Tab(text: '关注'),
@@ -190,6 +198,7 @@ class _SchedulePageState extends ConsumerState<SchedulePage>
           const dayFilterEmpty = '该日暂无赛程';
 
           return DetailFixedHeaderBody(
+            headerBackgroundColor: Colors.transparent,
             header: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -258,6 +267,7 @@ class _SchedulePageState extends ConsumerState<SchedulePage>
                     scrollController: _scrollControllers[0],
                     topInset: topInset,
                     matches: visible.followed,
+                    kickoffUtcById: kickoffMap,
                     kickoffTexts:
                         kickoffTextsFor(visible.followed, kickoffMap),
                     emptyText: followedEmptyText,
@@ -268,6 +278,7 @@ class _SchedulePageState extends ConsumerState<SchedulePage>
                     scrollController: _scrollControllers[1],
                     topInset: topInset,
                     matches: visible.active,
+                    kickoffUtcById: kickoffMap,
                     kickoffTexts: kickoffTextsFor(visible.active, kickoffMap),
                     emptyText: _uiState.calendarOpen
                         ? dayFilterEmpty
@@ -279,6 +290,7 @@ class _SchedulePageState extends ConsumerState<SchedulePage>
                     scrollController: _scrollControllers[2],
                     topInset: topInset,
                     matches: visible.finished,
+                    kickoffUtcById: kickoffMap,
                     kickoffTexts:
                         kickoffTextsFor(visible.finished, kickoffMap),
                     emptyText: _uiState.calendarOpen
@@ -313,6 +325,7 @@ class _MatchList extends StatelessWidget {
     required this.scrollController,
     required this.topInset,
     required this.matches,
+    required this.kickoffUtcById,
     required this.kickoffTexts,
     required this.emptyText,
     required this.onRefresh,
@@ -321,6 +334,7 @@ class _MatchList extends StatelessWidget {
   final ScrollController scrollController;
   final double topInset;
   final List<Match> matches;
+  final Map<String, DateTime> kickoffUtcById;
   final Map<String, String> kickoffTexts;
   final String emptyText;
   final Future<void> Function() onRefresh;
@@ -329,6 +343,10 @@ class _MatchList extends StatelessWidget {
   Widget build(BuildContext context) {
     final bottomPad = CapsuleNavMetrics.bottomInset(context);
     final systemBottom = MediaQuery.paddingOf(context).bottom;
+    final entries = buildScheduleListEntries(
+      matches: matches,
+      kickoffUtcById: kickoffUtcById,
+    );
 
     return RefreshIndicator(
       onRefresh: onRefresh,
@@ -356,13 +374,23 @@ class _MatchList extends StatelessWidget {
               physics: const AlwaysScrollableScrollPhysics(),
               padding:
                   EdgeInsets.only(top: topInset + 8, bottom: bottomPad + 8),
-              itemCount: matches.length,
-              itemBuilder: (_, i) => MatchTile(
-                match: matches[i],
-                kickoffText: kickoffTexts[matches[i].id] ?? '时间待定',
-                onTap: () => context.push('/match/${matches[i].id}'),
-                bottomFadeInset: systemBottom,
-              ),
+              itemCount: entries.length,
+              itemBuilder: (_, i) {
+                final entry = entries[i];
+                return switch (entry.kind) {
+                  ScheduleListEntryKind.dayHeader => ScheduleDayHeader(
+                      label: entry.dayLabel!,
+                      bottomFadeInset: systemBottom,
+                    ),
+                  ScheduleListEntryKind.match => MatchTile(
+                      match: entry.match!,
+                      kickoffText:
+                          kickoffTexts[entry.match!.id] ?? '时间待定',
+                      hideDateInMeta: true,
+                      bottomFadeInset: systemBottom,
+                    ),
+                };
+              },
             ),
     );
   }

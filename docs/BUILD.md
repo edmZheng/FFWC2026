@@ -81,8 +81,7 @@ python scripts/generate_launcher_icons.py
 
 | 权限 | 用途 |
 |---|---|
-| `INTERNET` / `ACCESS_NETWORK_STATE` | 拉取 worldcup26.ir、Worker 首发 |
-| `READ_CALENDAR` / `WRITE_CALENDAR` | 比赛详情「加入日历」提醒（`device_calendar`） |
+| `INTERNET` / `ACCESS_NETWORK_STATE` | 拉取 worldcup26.ir |
 
 ## 签名
 

@@ -48,7 +48,7 @@ class AppTheme {
         inverseSurface: p.onSurfaceStrong,
         onInverseSurface: p.background,
         inversePrimary: p.accentLight,
-        surfaceTint: p.accent,
+        surfaceTint: Colors.transparent,
       );
 
   static TextTheme _textTheme(TextTheme base, MonoPaletteSet p) {
@@ -96,7 +96,7 @@ class AppTheme {
   }
 
   static ThemeData _build(MonoPaletteSet p, Brightness brightness) {
-    final tokens = MonoTokens.from(p);
+    final tokens = MonoTokens.from(p, brightness: brightness);
     final scheme = _scheme(p, brightness);
     final base = ThemeData(
       useMaterial3: true,
@@ -121,20 +121,22 @@ class AppTheme {
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: p.background,
-        foregroundColor: p.onSurface,
+        foregroundColor: p.textPrimary,
         centerTitle: true,
         elevation: 0,
         scrolledUnderElevation: 0,
         titleTextStyle: text.titleLarge,
-        iconTheme: IconThemeData(color: p.onSurface),
+        iconTheme: IconThemeData(color: p.textPrimary),
       ),
       cardTheme: CardThemeData(
-        color: p.surface,
+        color: p.cardFill,
         elevation: 0,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(_radiusCard),
-          side: BorderSide(color: tokens.cardBorder, width: 1),
+          side: brightness == Brightness.light
+              ? BorderSide(color: tokens.cardBorder, width: 0.5)
+              : BorderSide.none,
         ),
       ),
       dividerTheme: DividerThemeData(
@@ -144,8 +146,8 @@ class AppTheme {
       tabBarTheme: TabBarThemeData(
         indicatorColor: p.accent,
         indicatorSize: TabBarIndicatorSize.label,
-        labelColor: p.onSurfaceStrong,
-        unselectedLabelColor: p.onSurfaceMuted,
+        labelColor: p.textPrimary,
+        unselectedLabelColor: p.textSecondary,
         labelStyle: const TextStyle(
           fontWeight: FontWeight.w500,
           fontSize: 13,
@@ -155,6 +157,7 @@ class AppTheme {
           fontSize: 13,
         ),
         dividerColor: Colors.transparent,
+        dividerHeight: 0,
         overlayColor: _noOverlay,
         splashFactory: _noSplash,
       ),
@@ -169,7 +172,8 @@ class AppTheme {
         selectedColor: p.accentDark,
         labelStyle: TextStyle(color: p.onSurface),
         secondaryLabelStyle: TextStyle(color: p.onAccent),
-        side: BorderSide(color: p.outlineVariant),
+        side: BorderSide.none,
+        elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(_radiusChip),
         ),

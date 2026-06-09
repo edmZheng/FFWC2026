@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
 import '../../core/utils/kickoff_time_resolver.dart';
 import '../../data/repositories/worldcup/providers.dart';
 import '../../data/models/match.dart';
-import '../../data/repositories/lineups/providers.dart';
+import '../../data/repositories/match_id_map/providers.dart';
 import '../../data/repositories/match_id_map_repository.dart';
 import '../../shared/widgets/match_tile.dart';
 
@@ -60,7 +58,6 @@ class LivePage extends ConsumerWidget {
             itemBuilder: (_, i) => MatchTile(
               match: matches[i],
               kickoffText: kickoffTexts[matches[i].id] ?? '时间待定',
-              onTap: () => context.push('/match/${matches[i].id}'),
             ),
           );
         },

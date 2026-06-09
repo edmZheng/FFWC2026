@@ -76,10 +76,11 @@ key 命名：`m:<date|all>` = matches，`l:<highlightlyMatchId>` = lineups。
 
 ## 与 Flutter 端的契约
 
-- Flutter 用 worldcup26.ir 的赛事 id 调 `lineup_repository.dart`
-- 内部查 `assets/data/match_id_map.json` 转成 Highlightly id
-- 请求 Worker `/lineups/{highlightlyId}`
-- 映射未覆盖（淘汰赛占位符）→ UI 静默隐藏首发块
+**2026-06-10 起 Flutter 端已移除 lineups 接入**（无 `lineup_repository`、无 `/match/:id` 详情页）。Worker 仍可按下列契约供将来复用或其它客户端调用：
+
+- 客户端用 Highlightly 赛事 id 请求 `GET /lineups/{highlightlyId}`
+- worldcup26.ir id → Highlightly id 映射见 `assets/data/match_id_map.json`（由 `scripts/build_match_id_map.py` 维护）
+- 映射未覆盖（淘汰赛占位符）→ 客户端应静默隐藏首发块
 
 ## 重建映射表（淘汰赛对阵敲钉后）
 

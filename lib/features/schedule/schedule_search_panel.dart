@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
+import '../../core/theme/mono_palette.dart';
 import '../../core/utils/kickoff_time_resolver.dart';
 import '../../data/models/match.dart';
-import '../../data/repositories/lineups/providers.dart';
+import '../../data/repositories/match_id_map/providers.dart';
 import '../../data/repositories/match_id_map_repository.dart';
 import '../../data/repositories/worldcup/providers.dart';
 import '../../shared/widgets/capsule_nav_bar.dart';
@@ -58,50 +57,46 @@ class _ScheduleInlineSearchFieldState extends State<ScheduleInlineSearchField> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final mono = MonoTokens.of(context);
 
-    return TextField(
-      controller: _controller,
-      focusNode: _focusNode,
-      decoration: InputDecoration(
-        hintText: '球队或球员',
-        isDense: true,
-        prefixIcon: const Icon(Icons.search, size: 22),
-        suffixIcon: widget.query.isEmpty
-            ? null
-            : IconButton(
-                icon: const Icon(Icons.clear, size: 20),
-                tooltip: '清除',
-                onPressed: () {
-                  _controller.clear();
-                  widget.onChanged('');
-                },
-              ),
-        filled: true,
-        fillColor: cs.surface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(
-            color: cs.outlineVariant.withValues(alpha: 0.55),
+    return DecoratedBox(
+      decoration: mono.surfaceDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: TextField(
+          controller: _controller,
+          focusNode: _focusNode,
+          decoration: InputDecoration(
+            hintText: '球队或球员',
+            isDense: true,
+            prefixIcon: const Icon(Icons.search, size: 22),
+            suffixIcon: widget.query.isEmpty
+                ? null
+                : IconButton(
+                    icon: const Icon(Icons.clear, size: 20),
+                    tooltip: '清除',
+                    onPressed: () {
+                      _controller.clear();
+                      widget.onChanged('');
+                    },
+                  ),
+            filled: true,
+            fillColor: mono.cardFill,
+            border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
           ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(
-            color: cs.outlineVariant.withValues(alpha: 0.55),
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: cs.primary, width: 1.5),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 10,
+          textInputAction: TextInputAction.search,
+          onChanged: widget.onChanged,
         ),
       ),
-      textInputAction: TextInputAction.search,
-      onChanged: widget.onChanged,
     );
   }
 }
@@ -163,7 +158,6 @@ class ScheduleSearchResults extends ConsumerWidget {
               return MatchTile(
                 match: m,
                 kickoffText: kickoffTexts[m.id] ?? '时间待定',
-                onTap: () => context.push('/match/${m.id}'),
               );
             },
           );

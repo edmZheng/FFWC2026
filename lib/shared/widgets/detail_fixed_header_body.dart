@@ -28,12 +28,16 @@ class DetailFixedHeaderBody extends StatefulWidget {
     super.key,
     required this.header,
     required this.builder,
+    this.headerBackgroundColor,
   });
 
   final Widget header;
 
   /// [topInset] 为测得的顶区高度，用于滚动区 padding.top。
   final Widget Function(double topInset) builder;
+
+  /// 固定顶区底色；null = [Scaffold] 背景色。英雄头图场景传 [Colors.transparent]。
+  final Color? headerBackgroundColor;
 
   @override
   State<DetailFixedHeaderBody> createState() => _DetailFixedHeaderBodyState();
@@ -72,7 +76,8 @@ class _DetailFixedHeaderBodyState extends State<DetailFixedHeaderBody> {
 
   @override
   Widget build(BuildContext context) {
-    final bg = Theme.of(context).scaffoldBackgroundColor;
+    final bg = widget.headerBackgroundColor ??
+        Theme.of(context).scaffoldBackgroundColor;
 
     return Stack(
       fit: StackFit.expand,

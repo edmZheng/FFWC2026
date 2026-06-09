@@ -1,6 +1,6 @@
 # UI 约定
 
-面向贡献者与接手开发者的界面规范（与代码同步，2026-06-09）。
+面向贡献者与接手开发者的界面规范（与代码同步，2026-06-10）。
 
 ## 首次启动封面（SplashScreen）
 
@@ -28,7 +28,7 @@
 | **Widget 树** | `MyApp` 始终在 Stack **固定槽位**；欢迎层（黑底 + 内容）叠在上方 `FadeTransition` 内，整页一体淡入/淡出 |
 | 触发时机 | 自 Splash 挂载即在底层预渲染；视频 350ms 淡出后可见；去掉 overlay **不 remount** 首页 |
 | 背景 | 纯黑（`ColoredBox`，与内容同在 overlay 内） |
-| 图标 | `assets/icon/welcome_icon.png`，120×120，`BoxShape.circle` + `BoxShadow(Colors.white54, blur=48, spread=12)` |
+| 图标 | `assets/icon/welcome_icon.png`，88×88，`BoxShape.circle` + `BoxShadow(Color(0x33FFFFFF), blur=36, spread=4)` |
 | 标题 / 副标题 | `FFWC2026`（30px bold）/ `一手掌握世界杯赛程信息`（`white60`，15px） |
 | 按钮 | 白底黑字「开始使用」，`GestureDetector + Container`，200×48，圆角 24；key `welcome-start-button` |
 | 淡入 | initState `_fade.forward()`，**300ms** `easeInOut` |
@@ -49,9 +49,23 @@
 | 跟随系统 | `MaterialApp.themeMode: ThemeMode.system`（`app.dart`） |
 | 字体 | Source Sans 3（`google_fonts`） |
 
+## Mono 卡片与描边
+
+`lib/core/theme/mono_palette.dart` + `app_theme.dart`：
+
+| 项 | 说明 |
+|---|---|
+| 亮色细边 | `MonoTokens.surfaceBorder == true` 时，卡片/宫格 `CardTheme` 与 `mono.cardShape()` / `surfaceDecoration()` 带 `0.5px` `cardBorder` |
+| 暗色 | 无描边；靠层级色区分 |
+| 阴影 | `Card` elevation **0**；`ColorScheme.surfaceTint` **透明**——**勿**用 M3 elevation 着色（会偏橙红） |
+| 自定义容器 | 关于页/规则页玻璃卡等用 `surfaceDecoration()`；默认**不**附带 `boxShadow` |
+| **勿用于** | 赛程子 Tab（`ShellTabBar`）、底栏胶囊——它们不是卡片，**勿**套 `surfaceDecoration` 上下边框 |
+
+全局 `tabBarTheme`：`dividerColor: Colors.transparent`、`dividerHeight: 0`。`ShellTabBar` 构造参数再显式设一遍。
+
 ## Shell AppBar 标题图
 
-四个主 Tab 的 `AppBar.title` 为 PNG 横幅（非 `Text`），统一 `AppBarTitleImage`（`shared/widgets/app_bar_title_image.dart`）：
+五个 Shell Tab 的 `AppBar.title` 为 PNG 横幅（非 `Text`），统一 `AppBarTitleImage`（`shared/widgets/app_bar_title_image.dart`）：
 
 | Tab | 构造 | 资源 | 读屏文案 |
 |---|---|---|---|
@@ -62,14 +76,42 @@
 | 关于 | `.about()` | `assets/titles/about.png` | 关于 |
 
 - 默认显示高度 **30** 逻辑像素，`BoxFit.contain`，`centerTitle: true`。
+- 叠在彩色 Hero 上时**反白**显示（`Colors.white` + 柔和黑色投影），见 `_InvertedTitleGraphic`。
 - 换图：覆盖对应 PNG 后 **Release 打包**（`pubspec` 注册 `assets/titles/` 目录）。
 - 详情页 AppBar 仍为 `Text`（队名、小组名等）；仅 Shell 五 Tab 用横幅。
 - **点击标题图回顶部**：`AppBarTitleImage` 有可选 `onTap` 参数（`GestureDetector` 包裹）。五 Tab 均已接入：积分榜/球队/场馆各自持有 `ScrollController`（已转为 `ConsumerStatefulWidget`）；关于页持有 `ScrollController`（已转为 `StatefulWidget`）；赛程页调用现有 `_scrollToTop(_tabController.index)`。新增 Tab 须一并接入 `onTap`。
 
+## Shell 色块头图
+
+五 Tab 用 `ShellHeroScaffold`（`shared/widgets/shell_hero_scaffold.dart`）：body 底层绘制 `WorldCupHeroBackground`（`world_cup_hero_skin.dart`），约占屏高 **25%**；透明 `AppBar` 叠于其上。
+
+| Tab | `WorldCupTab` | 页面 |
+|---|---|---|
+| 赛程 | `schedule` | `features/schedule/schedule_page.dart` |
+| 积分榜 | `standings` | `features/standings/standings_page.dart` |
+| 球队 | `teams` | `features/teams/teams_page.dart` |
+| 场馆 | `stadiums` | `features/stadiums/stadiums_page.dart` |
+| 关于 | `about` | `features/about/about_page.dart` |
+
+每个 Shell 页须：
+
+- 根布局 `ShellHeroScaffold(tab: …, appBar: …, body: …)`
+- `AppBar`：`backgroundColor: Colors.transparent`、`scrolledUnderElevation: 0`；赛程页另设 `surfaceTintColor: Colors.transparent`
+- **勿**在 `AppBar` 上设 `flexibleSpace: WorldCupHeroBackground` 或加大 `toolbarHeight`
+
+| 项 | 说明 |
+|---|---|
+| 默认参数 | `intensity: 0.60`；`animated: true`（60s）；`transition: 520ms` |
+| 切 Tab 过渡 | `_HeroTabMemory` + 520ms 颜色/形状插值 |
+| 融入正文 | 绘制层底部多段渐隐到 `MonoPalette.background` |
+| 范围 | **仅 Shell 五 Tab**；详情 / 规则页等全屏路由保持炭蓝纯色 `AppBar` |
+| 叠层 | `AppBarTitleImage`、`GlassIconButton`、赛程 `ShellTabBar` 等叠在透明 AppBar 上 |
+| 新增 Tab | 补 `WorldCupTab` + `_composition`，再接入 `ShellHeroScaffold` |
+
 ## Shell 导航
 
 - **5 Tab**：赛程 / 积分榜 / 球队 / 场馆 / 关于（无直播 Tab）
-- **底栏**：`CapsuleNavBar` 液态玻璃胶囊，悬浮于内容之上（`Stack`），不占底部横条
+- **底栏**：`CapsuleNavBar` 液态玻璃胶囊，悬浮于内容之上（`Stack`），不占底部横条；双层 `boxShadow`（亮色阴影 alpha 约 0.22）
 - **点击**：`GestureDetector`，无涟漪/高亮，仅切换选中态（与下文全应用 `NoSplash` 一致）
 - **回顶部（双入口）**：① 赛程 Tab 专属——列表滚过约 120px 后底栏出现 ↑「回顶部」，点击平滑滚顶（`scheduleScrollNavProvider`）；离开赛程 Tab 时 `app.dart` 调 `reset()`，回来后 `SchedulePage` 在 `initState`/`activate` 首帧执行 `_syncScrollNav()`。② 所有 Tab 通用——点击 AppBar 标题图触发 `onTap`，平滑滚回顶部（400ms / `easeOutCubic`）
 - 列表底部留白：`CapsuleNavMetrics.bottomInset(context)`，避免被胶囊遮挡
@@ -78,18 +120,35 @@
 
 | 项 | 说明 |
 |---|---|
-| 子 Tab | `关注` · `赛中 / 未赛` · `完赛`（`TabController` length 3） |
+| 子 Tab | `ShellTabBar`：`关注` · `赛中 / 未赛` · `完赛`（`TabController` length 3） |
 | 默认子 Tab | `initialIndex: 1`（**赛中 / 未赛**），不是「关注」 |
-| 搜索 | AppBar 右上角 → `AnimatedSize` 下推 `ScheduleInlineSearchField` + `ScheduleSearchResults`（与赛历互斥展开）；按球队中文/英文名、FIFA 代码、名单球员名筛已确定赛程 |
+| 子 Tab 样式 | **无**上下细线边框；`dividerHeight: 0`（见 §Mono 卡片与描边） |
+| 布局 | `DetailFixedHeaderBody`：赛历/搜索为 Stack **顶栏**（不透明 `Material` 最上层），列表全屏滚于下层；`padding.top = topInset + 8`；`DetailScrollClipScope` 校正离屏缩放视口上沿。**勿** `Column` + `AnimatedSize` 下推列表（`Clip.none` 卡片会盖住顶栏） |
+| 搜索 | AppBar 右上角 → 顶栏展开 `ScheduleInlineSearchField` + `ScheduleSearchResults`（`topInset` 同步；与赛历互斥）；按球队中文/英文名、FIFA 代码、名单球员名筛已确定赛程 |
 | 赛历入口 | AppBar **左上角** `calendar_month`（与右上搜索对称）；再点收起 |
 | 赛历 ⇄ 搜索 | **互斥**：展开其一自动收起另一（含清空赛历选日 / 搜索词） |
-| 赛历条 | Tab 下方 `ScheduleDayStrip`（`schedule_day_strip.dart`），`AnimatedSize` 约 320ms 下推 `TabBarView` |
+| 赛历条 | 顶栏内 `ScheduleDayStrip`（`schedule_day_strip.dart`），`AnimatedSize` 约 320ms 展开收起 |
 | 日期范围 | `scheduleCalendarDays`：已确定比赛最早～最晚日，并强制包含用户当前日历日（无固定 6/11–7/19） |
 | 默认选中 | `defaultCalendarSelectedDay()` → 用户当前日 |
 | 高亮规则 | `highlightCountByDay`：子 Tab **关注** / **赛中·未赛** / **完赛** 各用对应列表计场（仅有该 Tab 比赛的日期才高亮）；切换 Tab 时 `SchedulePageUiState.switchTab()` 刷新条 |
 | 列表筛选 | 展开且已选日期时，`ScheduleVisibleMatches.applyDayFilter()` → `filterMatchesByCalendarDay` 筛三 Tab（北京时间，优先 `match_id_map` UTC） |
 | 实现勿踩 | **无** `/schedule/calendar` 路由；赛历/搜索状态与可见列表在 `features/schedule/state/schedule_page_state.dart`；日期工具在 `core/utils/match_calendar.dart` |
 | 关注 Tab | `followedMatchesProvider`：主客队任一方为已关注 `teamId` 的 `isConfirmed` 比赛，按开赛时间排序 |
+
+## 赛程卡片（MatchTile）
+
+`shared/widgets/match_tile.dart` — 赛程 Tab、内嵌搜索、球队/小组/场馆详情的比赛列表。
+
+| 区域 | 内容 |
+|---|---|
+| 顶行左 | `kickoffText` 日期 + 周几 + `·` + 小组/阶段（如 `6月12日 周四 · A 组`） |
+| 顶行右 | 未赛：`HH:mm`；进行中：蓝点 + 分钟数；完场：`完场` |
+| 主行 | 主队 `[TeamBadge 28] 队名` — 居中 `ScorePill`（17px） — `队名 [TeamBadge 28]` 客队 |
+| 间距 | 卡片 margin 水平 16、垂直 3；内边距 `14×12` |
+| 点击 | 当前**不传** `onTap`（无比赛详情页） |
+
+- **不用** 底部 `StatusChip`、竖排队徽+队名、左上角 live 圆点（状态并入顶行）。
+- schedule 页传 `bottomFadeInset` 启用压栈动效，见 §列表卡片动效。
 
 ## 积分榜页（`/standings`）
 
@@ -148,9 +207,11 @@
 - **Stack 布局**：下层全屏滚动，上层不透明 `Material` 顶区（**无**底部分割线）
 - 顶区始终在最上层；下方内容从顶区底边滚入/滚出
 - `DetailScrollClipScope` 将离屏缩放的有效视口上沿设为顶区底边
+- 顶区高度经 `SizeChangedLayoutNotifier` 跟踪（赛历/搜索 `AnimatedSize` 动画期间同步 `topInset`）
 
 | 页面 | 固定顶区 | 随滚动 |
 |---|---|---|
+| 赛程 `/schedule` | `ScheduleDayStrip` 或搜索栏（互斥，`AnimatedSize`） | `TabBarView` 三子 Tab 列表 / `ScheduleSearchResults` |
 | 小组详情 `/group/:name` | 积分榜 `GroupTable` 卡片 | `SectionTitle('赛程')` + 比赛列表 |
 | 球队详情 `/team/:id` | 国旗 + 小组 / FIFA 排名 | 「赛程」、比赛、「出战名单」、26 人 |
 
@@ -170,7 +231,6 @@
 | 球队详情 — 比赛列表 | 赛程 |
 | 球队详情 — 26 人 | 出战名单 |
 | 小组详情 — 比赛列表 | 赛程 |
-| 比赛详情 — 阵容 | 首发名单 |
 
 ## 球队详情顶栏
 
@@ -191,14 +251,18 @@
 
 ### schedule 页特例（顶/底分边，`MatchTile.bottomFadeInset != null`）
 
-只在 `SchedulePage._MatchList` 的 `MatchTile` 上生效——`MatchTile` 接到非 null `bottomFadeInset` 时**外层 `StackedEdgeFade` + 内层 `EdgeProximityScale(verticalTopOnly)`** 双层包装；其他 6 处使用 `MatchTile` 的页面 (`live`/`schedule_search_panel`/`team_detail`/`stadium_detail`/`group_detail`) 不传该参数，保持默认 `EdgeProximityScale(vertical)`。
+只在 `SchedulePage._MatchList` 的 `MatchTile` 上生效——`MatchTile` 接到非 null `bottomFadeInset` 时**外层 `StackedEdgeFade` + 内层 `EdgeProximityScale(verticalTopOnly)`** 双层包装；其它使用 `MatchTile` 的页面不传该参数，保持默认 `EdgeProximityScale(vertical)`。
 
 | 边 | 组件 | 行为 |
 |---|---|---|
 | 顶部 | `EdgeProximityScale(verticalTopOnly)` | 卡片正常滑出 viewport，按出屏比例缩到 0.88，无 alpha、无位置 clamp |
 | 底部 | `StackedEdgeFade`（`shared/widgets/stacked_edge_fade.dart`） | 卡片下沿距 `contentBottom` 还有 **40dp**（`earlyTrigger`）时开始触发，scale 1.0→0.75、alpha 1.0→0.0、圆角 10→36 同步变化；卡片下沿越过 `contentBottom` 时开始**硬停**（`Transform.translate` clamp）；累计"虚拟位移" = `卡片高度 × 2.5` 时完全淡尽（形成"残影"）。alpha < 0.5 时 `IgnorePointer` 防误触；`scrollPosition.pixels < 0`（下拉刷新 overscroll）时不 clamp。曲线 Linear |
 
-底部边缘**触发线**（`contentBottom`）= 屏幕物理底部（`MediaQuery.paddingOf.bottom`，仅避开手势区），不是 `CapsuleNav` 上方——卡片仍可滑入 `CapsuleNav` blur 浮层下方。`SchedulePage._MatchList` 的 sliver `padding.bottom` = `CapsuleNavMetrics.bottomInset + 8`，确保末尾卡片可完整滚出 TabBar 遮挡范围。
+底部边缘**触发线**（`contentBottom`）= 屏幕物理底部（`MediaQuery.paddingOf.bottom`，仅避开手势区），不是 `CapsuleNav` 上方——卡片仍可滑入 `CapsuleNav` blur 浮层下方。`SchedulePage._MatchList` 的 sliver `padding.top` = `topInset + 8`、`padding.bottom` = `CapsuleNavMetrics.bottomInset + 8`，确保首卡不被赛历/搜索遮挡、末卡可完整滚出 TabBar 遮挡范围。
+
+### z-order：顶栏用 `DetailFixedHeaderBody`
+
+`Clip.none` + 离屏缩放会让卡片画出列表视口上沿。赛历/搜索若与列表同 `Column` 且列表在后绘制，滚动时卡片会盖住顶栏。赛程页须 `DetailFixedHeaderBody` 把顶栏固定在 Stack 最上层，与底部 sliver 选型无关。
 
 ### z-order：底部用反向 paint 的自定义 sliver
 
@@ -207,20 +271,12 @@
 - **底部边缘**：fading 卡片先画 → 在下层；normal 卡片后画 → 在上层覆盖 ✓
 - **顶部边缘**：cards 因为 `verticalTopOnly` 仅居中 shrink、不 clamp、相邻卡片之间留出间隙不重叠，paint 顺序对视觉无影响 ✓
 
-为什么不直接 `CustomScrollView + SliverPadding + ZSortedSliverList`：`CustomScrollView` 路径绕开了 `BoxScrollView` 内部的 MediaQuery padding 处理与一些 layout invalidation 行为，导致 calendar/search `AnimatedSize` 切换时 viewport 边界判断、`Clip.none` 行为、以及 viewport 扩大后 sliver 重 layout 触发都跟 `ListView.builder` 不一致（出现卡片画到日历栏上、退出 calendar/search 后下方 cards 空白等异常）。`ZSortedListView extends BoxScrollView` 走标准 ListView 路径即可避开这些副作用。
-
-## 比赛详情 AppBar
-
-- **未开赛**（且能解析开赛时间）：右上 **铃铛** → 写入系统日历（`lib/core/calendar/match_calendar_reminder.dart`，`device_calendar`）；赛事开始时刻 + **赛前 60 分钟**提醒；首次需系统日历权限
-- **未开赛**（无开赛时间）：不显示铃铛
-- **进行中 / 完场**：`StatusChip(match:, showTime: false)`（芯片不重复显示开赛时间）
-- 开赛时间仍在正文卡与「赛事信息」；铃铛与 `StatusChip` 不并存
-- 赛程列表卡片：`StatusChip(showTime: false)`，时间在 VS 下方；进行中左上角蓝点（`MatchTile`）
+为什么不直接 `CustomScrollView + SliverPadding + ZSortedSliverList`：`CustomScrollView` 路径绕开了 `BoxScrollView` 内部的 MediaQuery padding 处理与一些 layout invalidation 行为，导致 calendar/search `AnimatedSize` 切换时 viewport 边界判断与 sliver 重 layout 异常（退出 calendar/search 后下方 cards 空白等）。`ZSortedListView extends BoxScrollView` 走标准 ListView 路径即可避开。顶栏被卡片遮挡须 `DetailFixedHeaderBody`（见上），与 sliver 选型无关。
 
 ## 直播跟分
 
 - `liveScoreSyncProvider`（`MyApp` 常驻，`lib/core/live/live_score_sync.dart`）：存在 `MatchStatus.live` 时每 **30 秒** `worldCupDataProvider.refresh()`（对齐 worldcup26.ir 上游节奏；不闪 loading）
-- 更新范围：赛程卡 `MatchTile`（`ScorePill`）、比赛详情、积分榜等依赖主数据的页面
+- 更新范围：赛程卡 `MatchTile`（`ScorePill`）、球队/小组详情赛程列表、积分榜等依赖主数据的页面
 - 无进行中比赛时不轮询；仍可下拉刷新
 - 无独立 WebSocket；比分字段来自 `/get/games` 的 `home_score` / `away_score` / `time_elapsed`
 

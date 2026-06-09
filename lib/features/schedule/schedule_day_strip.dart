@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/mono_palette.dart';
 import '../../core/utils/match_calendar.dart';
 
 /// 赛程页内嵌横向赛历条；范围随数据延伸并包含今天。
@@ -126,19 +127,12 @@ class _DayChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final mono = MonoTokens.of(context);
     final bg = selected
         ? cs.primaryContainer
         : highlighted
             ? cs.primaryContainer.withValues(alpha: 0.42)
-            : cs.surface;
-    final border = selected
-        ? Border.all(color: cs.primary, width: 1.5)
-        : highlighted
-            ? Border.all(color: cs.primary.withValues(alpha: 0.65), width: 1)
-            : (isToday
-                ? Border.all(color: cs.primary.withValues(alpha: 0.45))
-                : Border.all(color: cs.outlineVariant.withValues(alpha: 0.45)));
-
+            : mono.cardFill;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -149,10 +143,9 @@ class _DayChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         child: Ink(
           width: 52,
-          decoration: BoxDecoration(
+          decoration: mono.surfaceDecoration(
             color: bg,
             borderRadius: BorderRadius.circular(8),
-            border: border,
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -164,7 +157,7 @@ class _DayChip extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       color: selected
                           ? cs.onPrimaryContainer
-                          : (highlighted ? cs.primary : cs.onSurface),
+                          : (highlighted ? cs.primary : mono.textPrimary),
                     ),
               ),
               const SizedBox(height: 2),
@@ -172,7 +165,7 @@ class _DayChip extends StatelessWidget {
                 chineseWeekday(day).substring(1),
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       fontSize: 9,
-                      color: cs.onSurfaceVariant,
+                      color: mono.textSecondary,
                     ),
               ),
               const SizedBox(height: 2),
@@ -183,7 +176,7 @@ class _DayChip extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       color: labelCount > 0
                           ? (selected ? cs.onPrimaryContainer : cs.primary)
-                          : cs.onSurfaceVariant.withValues(alpha: 0.65),
+                          : mono.textSecondary.withValues(alpha: 0.75),
                     ),
               ),
             ],

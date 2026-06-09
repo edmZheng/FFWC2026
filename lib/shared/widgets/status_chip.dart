@@ -14,7 +14,7 @@ class StatusChip extends StatelessWidget {
 
   final Match match;
 
-  /// 未开赛时是否在芯片内显示时间（赛程卡片已在 VS 下方展示）。
+  /// 未开赛时是否在芯片内显示时间（列表 `MatchTile` 顶行已展示；详情正文另有开赛时间）。
   final bool showTime;
   final String? kickoffText;
 
