@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 /// 首次启动欢迎页 —— 视频结束后展示，点击「开始使用」才进主界面。
 /// 注意：此组件在 SplashScreen Stack 中渲染时没有 MaterialApp 祖先，
 /// 因此不能使用 Scaffold / ElevatedButton，全部使用不依赖 Material 上下文的基础 widget。
+///
+/// 首页 [child] 始终占 Stack 固定槽位；欢迎层叠在上方整页淡入/淡出（黑底 + 内容一体），
+/// 点击「开始使用」后整页渐隐露出底层首页，避免仅内容淡出而黑底残留。
 class WelcomePage extends StatefulWidget {
   const WelcomePage({super.key, required this.child});
 
@@ -23,9 +26,9 @@ class _WelcomePageState extends State<WelcomePage>
     super.initState();
     _fade = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 300),
     );
-    _opacity = CurvedAnimation(parent: _fade, curve: Curves.easeIn);
+    _opacity = CurvedAnimation(parent: _fade, curve: Curves.easeInOut);
     _fade.forward();
   }
 
@@ -43,22 +46,34 @@ class _WelcomePageState extends State<WelcomePage>
 
   @override
   Widget build(BuildContext context) {
-    if (_done) return widget.child;
-
-    // Directionality + 纯 Stack：不依赖 MaterialApp / Scaffold
+    // child 固定槽位，勿在 _done 后 return widget.child，否则会 remount 首页。
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Stack(
+        fit: StackFit.expand,
         children: [
-          // 纯黑底
-          const ColoredBox(color: Colors.black, child: SizedBox.expand()),
-          // 淡入内容层
-          FadeTransition(
-            opacity: _opacity,
-            child: _buildContent(),
+          IgnorePointer(
+            ignoring: !_done,
+            child: widget.child,
           ),
+          if (!_done)
+            FadeTransition(
+              opacity: _opacity,
+              child: _buildWelcomeOverlay(),
+            ),
         ],
       ),
+    );
+  }
+
+  /// 黑底与内容在同一层，淡入淡出时整页一体过渡。
+  Widget _buildWelcomeOverlay() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        const ColoredBox(color: Colors.black, child: SizedBox.expand()),
+        _buildContent(),
+      ],
     );
   }
 
@@ -69,7 +84,6 @@ class _WelcomePageState extends State<WelcomePage>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 图标 + 白色发光阴影
             Container(
               width: 120,
               height: 120,
@@ -110,10 +124,10 @@ class _WelcomePageState extends State<WelcomePage>
               ),
             ),
             const SizedBox(height: 52),
-            // 白底黑字按钮 —— 用 GestureDetector + Container 避免 ElevatedButton 的 Theme 依赖
             GestureDetector(
               onTap: _onStart,
               child: Container(
+                key: const Key('welcome-start-button'),
                 width: 200,
                 height: 48,
                 decoration: BoxDecoration(

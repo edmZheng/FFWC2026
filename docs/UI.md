@@ -1,6 +1,6 @@
 # UI 约定
 
-面向贡献者与接手开发者的界面规范（与代码同步，2026-06-06）。
+面向贡献者与接手开发者的界面规范（与代码同步，2026-06-09）。
 
 ## 首次启动封面（SplashScreen）
 
@@ -9,30 +9,32 @@
 | 项 | 说明 |
 |---|---|
 | 视频 | `assets/videos/cover.mp4`，`VideoPlayer`，`BoxFit.cover` 全屏 |
-| 结束时机 | 视频播放停止且剩余 ≤ 300ms 时触发；备用 timer = 视频时长 + 800ms（时长未知则 15s 上限） |
-| 淡出 | 停在最后一帧，700ms `easeInOut` 淡出视频层 → 露出 Stack 底层欢迎页 |
-| 初始化失败 | `initialize()` 超时 8s 或抛异常 → 直接跳过，`_splashDone = true` |
-| **Widget 树** | 始终 `Directionality → Stack`：`widget.child`（WelcomePage）占**固定槽位**；`!_splashDone` 时叠视频层 + 触屏层 + 跳过按钮。**⚠️ 勿**在 `_splashDone` 后 `return widget.child`——WelcomePage 会 remount，`initState` 600ms 淡入重播，静态封面闪一下 |
-| 交互屏蔽 | 播放期 `IgnorePointer(ignoring: !_splashDone)`；`_splashDone` 后欢迎页可点「开始使用」 |
-| **跳过按钮** | 任意触屏按下 → 右上角深色半透明胶囊「跳过」（250ms 淡入）；3 秒无操作淡出；再次触屏重置计时；点「跳过」仅触发视频 700ms 淡出（**触屏本身不跳过**）。`Positioned.fill` + `Listener(onPointerDown, HitTestBehavior.opaque)`；视频层 `IgnorePointer` |
-| **⚠️ 禁忌** | **勿**全屏 `GestureDetector(onTap)`（触屏轻移时常不识别）；**勿**把触屏层包进 `Opacity`/`FadeTransition`（Android hit-test 断裂）；**勿** position 停滞定时器自动淡出（真机 position 上报偶发停住会误跳过）；**勿** `_splashDone` 后改树结构 remount child |
-| 回归测试 | `test/splash_screen_test.dart`（触屏显跳过、触屏不自动跳过、fade 完成不 remount） |
+| 状态机 | `_Phase`：`videoPlaying` → `fading` → `splashGone`（见源码文件头注释） |
+| 结束时机 | **仅**视频自然播完：`addListener(_onVideoTick)` 检测 `isCompleted` 或 `position >= duration - 120ms`；兜底 timer = 时长 + 800ms（未知则 15s） |
+| 交互 | 播放期**不接受任何触摸**（无跳过按钮、无全屏触屏层）；用户只能等播完 |
+| 淡出 | 停在最后一帧，**350ms** `easeInOut` 淡出视频层 → 露出 Stack 底层欢迎页 |
+| 初始化失败 | `initialize()` 超时 **12s** 或抛异常 → `_Phase.splashGone`，直接露出欢迎页（避免黑屏卡死） |
+| **Widget 树** | 始终 `Directionality → Stack`：`widget.child`（WelcomePage）占**固定槽位**；`phase != splashGone` 时叠视频层（`IgnorePointer`）。**⚠️ 勿**在 `splashGone` 后 `return widget.child`——WelcomePage 会 remount，欢迎层淡入重播 |
+| 交互屏蔽 | 播放期 `IgnorePointer(ignoring: phase != splashGone)` 挡欢迎页；`splashGone` 后欢迎页可点「开始使用」 |
+| **⚠️ 禁忌** | **勿**恢复跳过按钮 / 全屏触屏层（2026-06-09 产品已移除）；**勿** `splashGone` 后改树结构 remount child |
+| 回归测试 | `test/splash_screen_test.dart`（无跳过 UI、触屏无效、completed/计时器转场、不 remount） |
 
 ## 欢迎页（WelcomePage）
 
-`lib/features/splash/welcome_page.dart`，视频淡出后自动展示，点击「开始使用」才进主界面。
+`lib/features/splash/welcome_page.dart`，视频淡出后展示，点击「开始使用」才进主界面。
 
 | 项 | 说明 |
 |---|---|
-| 触发时机 | 自 Splash 挂载即在 Stack 底层淡入（600ms）；视频淡出后可见；`_splashDone` 仅去掉视频 overlay，**不 remount** |
-| 背景 | 纯黑（`ColoredBox(Colors.black)`） |
-| 图标 | `assets/icon/welcome_icon.png`，120×120，`BoxShape.circle` + `BoxShadow(Colors.white54, blur=48, spread=12)` 白色发光阴影 |
-| 标题 | `FFWC2026`，白色，30px bold，letterSpacing=2 |
-| 副标题 | `一手掌握世界杯赛程信息`，`Colors.white60`，15px |
-| 按钮 | 白底黑字「开始使用」，`GestureDetector + Container`，200×48，圆角 24 |
-| 淡入 | initState 立即 `_fade.forward()`，600ms `easeIn`；视频播完前已到 1.0，视觉无感知 |
-| 退出 | 点击按钮 → `_fade.reverse()`（600ms）→ `setState(_done = true)` → 返回 `widget.child`（`MyApp`） |
-| **⚠️ 禁忌** | **不能用 `Scaffold` / `ElevatedButton`**：WelcomePage 在 SplashScreen Stack 底层渲染时无 MaterialApp 祖先，Scaffold 会拿不到 Material context 渲染为灰色。必须用 `Directionality + Stack + ColoredBox`，按钮用 `GestureDetector + Container` |
+| **Widget 树** | `MyApp` 始终在 Stack **固定槽位**；欢迎层（黑底 + 内容）叠在上方 `FadeTransition` 内，整页一体淡入/淡出 |
+| 触发时机 | 自 Splash 挂载即在底层预渲染；视频 350ms 淡出后可见；去掉 overlay **不 remount** 首页 |
+| 背景 | 纯黑（`ColoredBox`，与内容同在 overlay 内） |
+| 图标 | `assets/icon/welcome_icon.png`，120×120，`BoxShape.circle` + `BoxShadow(Colors.white54, blur=48, spread=12)` |
+| 标题 / 副标题 | `FFWC2026`（30px bold）/ `一手掌握世界杯赛程信息`（`white60`，15px） |
+| 按钮 | 白底黑字「开始使用」，`GestureDetector + Container`，200×48，圆角 24；key `welcome-start-button` |
+| 淡入 | initState `_fade.forward()`，**300ms** `easeInOut` |
+| 退出 | 点按钮 → overlay 整页 `_fade.reverse()`（300ms）→ `_done = true` 移除 overlay，露出底层 `MyApp`。**勿** `return widget.child` 换树 |
+| **⚠️ 禁忌** | **不能用 `Scaffold` / `ElevatedButton`**（无 MaterialApp 祖先）；**勿**仅内容参与淡出而把黑底留在外面（会黑屏过渡） |
+| 回归测试 | `test/welcome_page_test.dart`（整页叠化进首页、不 remount） |
 
 ## 交互反馈
 

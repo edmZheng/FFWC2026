@@ -45,7 +45,7 @@ flutter build apk --release
 |------|------|
 | `build/app/outputs/flutter-apk/app-release.apk` | Release 单包（约 60MB，debug 签名） |
 | 项目根 `flutter-apk - 快捷方式.lnk` | 指向上述目录，便于资源管理器打开 |
-| 验证首次启动封面 | 封面/跳过/欢迎页仅在 `ffwc_launched_v1` 首次写入前出现；已装过须**清除应用数据**或卸载重装 |
+| 验证首次启动封面 | 封面视频/欢迎页仅在 `ffwc_launched_v1` 首次写入前出现；已装过须**清除应用数据**或卸载重装 |
 
 ## 启动图标
 

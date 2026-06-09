@@ -1,0 +1,1 @@
+- [启动流程必须按状态机修复](feedback_splash_state_machine.md) — 修首次启动视频、欢迎页流程 bug 时触发

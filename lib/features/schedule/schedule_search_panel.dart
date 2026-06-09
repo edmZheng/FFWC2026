@@ -108,9 +108,14 @@ class _ScheduleInlineSearchFieldState extends State<ScheduleInlineSearchField> {
 
 /// 按 query 展示赛程搜索结果或提示。
 class ScheduleSearchResults extends ConsumerWidget {
-  const ScheduleSearchResults({super.key, required this.query});
+  const ScheduleSearchResults({
+    super.key,
+    required this.query,
+    this.topInset = 0,
+  });
 
   final String query;
+  final double topInset;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -151,7 +156,7 @@ class ScheduleSearchResults extends ConsumerWidget {
           final bottomPad = CapsuleNavMetrics.bottomInset(context);
           return ListView.builder(
             clipBehavior: Clip.none,
-            padding: EdgeInsets.only(top: 8, bottom: bottomPad),
+            padding: EdgeInsets.only(top: topInset + 8, bottom: bottomPad),
             itemCount: results.length,
             itemBuilder: (_, i) {
               final m = results[i];

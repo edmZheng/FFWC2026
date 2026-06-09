@@ -14,23 +14,80 @@ void main() {
     VideoPlayerPlatform.instance = videoPlatform;
   });
 
-  testWidgets('shows skip button after first touch on splash video', (tester) async {
+  testWidgets('keeps welcome page behind splash while video is playing', (tester) async {
     await tester.pumpWidget(
       const MediaQuery(
         data: MediaQueryData(),
-        child: SplashScreen(child: SizedBox.expand()),
+        child: SplashScreen(child: SizedBox.expand(key: nextPageKey)),
       ),
     );
 
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('跳过'), findsNothing);
+    // 视频播放中，欢迎页仍被 IgnorePointer 挡在后面。
+    expect(_nextPageIsStillBehindSplash(nextPageKey), isTrue);
+  });
 
-    await tester.tapAt(const Offset(120, 240));
+  testWidgets('no skip UI and tapping does nothing', (tester) async {
+    await tester.pumpWidget(
+      const MediaQuery(
+        data: MediaQueryData(),
+        child: SplashScreen(child: SizedBox.expand(key: nextPageKey)),
+      ),
+    );
+
+    await tester.pump();
     await tester.pump();
 
-    expect(find.text('跳过'), findsOneWidget);
+    // 跳过逻辑已移除：不存在跳过按钮，点击屏幕也不能提前结束。
+    await tester.tapAt(const Offset(120, 240));
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump();
+
+    expect(find.text('跳过'), findsNothing);
+    expect(_nextPageIsStillBehindSplash(nextPageKey), isTrue);
+  });
+
+  testWidgets('fades to welcome when video completes', (tester) async {
+    await tester.pumpWidget(
+      const MediaQuery(
+        data: MediaQueryData(),
+        child: SplashScreen(child: SizedBox.expand(key: nextPageKey)),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump();
+
+    expect(_nextPageIsStillBehindSplash(nextPageKey), isTrue);
+
+    // 视频自然播放结束 → 渐变进入欢迎页。
+    videoPlatform.sendCompleted();
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(_nextPageIsStillBehindSplash(nextPageKey), isFalse);
+  });
+
+  testWidgets('fades to welcome via fallback timer when end signal is missing', (tester) async {
+    await tester.pumpWidget(
+      const MediaQuery(
+        data: MediaQueryData(),
+        child: SplashScreen(child: SizedBox.expand(key: nextPageKey)),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump();
+
+    expect(_nextPageIsStillBehindSplash(nextPageKey), isTrue);
+
+    // 假视频时长 6s，兜底计时器在 6.8s 触发。
+    await tester.pump(const Duration(seconds: 7));
+    await tester.pumpAndSettle();
+
+    expect(_nextPageIsStillBehindSplash(nextPageKey), isFalse);
   });
 
   testWidgets('does not remount child when splash fade completes', (tester) async {
@@ -49,43 +106,24 @@ void main() {
     await tester.pump();
     expect(mountCount, 1);
 
-    await tester.tapAt(const Offset(120, 240));
+    videoPlatform.sendCompleted();
     await tester.pump();
-    await tester.tap(find.text('跳过'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pump(const Duration(milliseconds: 350));
     await tester.pump();
 
     expect(mountCount, 1);
   });
-
-  testWidgets('does not skip after touching outside skip button', (tester) async {
-    await tester.pumpWidget(
-      const MediaQuery(
-        data: MediaQueryData(),
-        child: SplashScreen(child: SizedBox.expand(key: nextPageKey)),
-      ),
-    );
-
-    await tester.pump();
-    await tester.pump();
-
-    await tester.tapAt(const Offset(120, 240));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 3));
-
-    expect(_nextPageIsStillBehindSplash(nextPageKey), isTrue);
-  });
 }
 
 bool _nextPageIsStillBehindSplash(Key nextPageKey) {
-  return find
+  final element = find
       .ancestor(
         of: find.byKey(nextPageKey),
         matching: find.byType(IgnorePointer),
       )
       .evaluate()
-      .isNotEmpty;
+      .single;
+  return (element.widget as IgnorePointer).ignoring;
 }
 
 class _MountTracker extends StatefulWidget {
@@ -111,6 +149,7 @@ class _MountTrackerState extends State<_MountTracker> {
 class _FakeVideoPlayerPlatform extends VideoPlayerPlatform {
   final _events = <int, StreamController<VideoEvent>>{};
   int _nextPlayerId = 1;
+  int? _lastPlayerId;
 
   @override
   Future<void> init() async {}
@@ -118,6 +157,7 @@ class _FakeVideoPlayerPlatform extends VideoPlayerPlatform {
   @override
   Future<int?> createWithOptions(VideoCreationOptions options) async {
     final playerId = _nextPlayerId++;
+    _lastPlayerId = playerId;
     final controller = StreamController<VideoEvent>();
     _events[playerId] = controller;
     scheduleMicrotask(() {
@@ -130,6 +170,12 @@ class _FakeVideoPlayerPlatform extends VideoPlayerPlatform {
       );
     });
     return playerId;
+  }
+
+  void sendCompleted() {
+    _events[_lastPlayerId]?.add(
+      VideoEvent(eventType: VideoEventType.completed),
+    );
   }
 
   @override

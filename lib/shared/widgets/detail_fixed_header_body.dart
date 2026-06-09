@@ -66,6 +66,10 @@ class _DetailFixedHeaderBodyState extends State<DetailFixedHeaderBody> {
     }
   }
 
+  void _scheduleMeasureHeader() {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measureHeader());
+  }
+
   @override
   Widget build(BuildContext context) {
     final bg = Theme.of(context).scaffoldBackgroundColor;
@@ -81,10 +85,16 @@ class _DetailFixedHeaderBodyState extends State<DetailFixedHeaderBody> {
           top: 0,
           left: 0,
           right: 0,
-          child: Material(
-            key: _headerKey,
-            color: bg,
-            child: widget.header,
+          child: NotificationListener<SizeChangedLayoutNotification>(
+            onNotification: (_) {
+              _scheduleMeasureHeader();
+              return false;
+            },
+            child: Material(
+              key: _headerKey,
+              color: bg,
+              child: SizeChangedLayoutNotifier(child: widget.header),
+            ),
           ),
         ),
       ],

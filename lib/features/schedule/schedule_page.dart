@@ -10,6 +10,7 @@ import '../../data/repositories/lineups/providers.dart';
 import '../../data/repositories/worldcup/providers.dart';
 import '../../shared/widgets/app_bar_title_image.dart';
 import '../../shared/widgets/capsule_nav_bar.dart';
+import '../../shared/widgets/detail_fixed_header_body.dart';
 import '../../shared/widgets/match_tile.dart';
 import '../../shared/widgets/z_sorted_sliver_list.dart';
 import '../../data/repositories/followed_teams/providers.dart';
@@ -188,100 +189,107 @@ class _SchedulePageState extends ConsumerState<SchedulePage>
               : '尚未关注球队\n在球队页或球队详情中点击爱心即可关注';
           const dayFilterEmpty = '该日暂无赛程';
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              AnimatedSize(
-                duration: _calendarAnimDuration,
-                curve: Curves.easeOutCubic,
-                alignment: Alignment.topCenter,
-                child: _uiState.calendarOpen && _uiState.selectedDay != null
-                    ? ScheduleDayStrip(
-                        days: visible.calendarDays,
-                        selectedDay: _uiState.selectedDay!,
-                        highlightCountByDay: highlightCounts,
-                        labelCountByDay: labelCounts,
-                        onDaySelected: _onDaySelected,
-                      )
-                    : const SizedBox(width: double.infinity),
-              ),
-              AnimatedSize(
-                duration: _calendarAnimDuration,
-                curve: Curves.easeOutCubic,
-                alignment: Alignment.topCenter,
-                child: _uiState.searchOpen
-                    ? Material(
-                        color:
-                            Theme.of(context).colorScheme.surfaceContainerLow,
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: ScheduleInlineSearchField(
-                                  query: _uiState.searchQuery,
-                                  onChanged: (q) => setState(
-                                    () => _uiState =
-                                        _uiState.updateSearchQuery(q),
+          return DetailFixedHeaderBody(
+            header: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AnimatedSize(
+                  duration: _calendarAnimDuration,
+                  curve: Curves.easeOutCubic,
+                  alignment: Alignment.topCenter,
+                  child: _uiState.calendarOpen && _uiState.selectedDay != null
+                      ? ScheduleDayStrip(
+                          days: visible.calendarDays,
+                          selectedDay: _uiState.selectedDay!,
+                          highlightCountByDay: highlightCounts,
+                          labelCountByDay: labelCounts,
+                          onDaySelected: _onDaySelected,
+                        )
+                      : const SizedBox(width: double.infinity),
+                ),
+                AnimatedSize(
+                  duration: _calendarAnimDuration,
+                  curve: Curves.easeOutCubic,
+                  alignment: Alignment.topCenter,
+                  child: _uiState.searchOpen
+                      ? Material(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerLow,
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: ScheduleInlineSearchField(
+                                    query: _uiState.searchQuery,
+                                    onChanged: (q) => setState(
+                                      () => _uiState =
+                                          _uiState.updateSearchQuery(q),
+                                    ),
                                   ),
                                 ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.close),
-                                tooltip: '收起搜索',
-                                onPressed: _closeSearch,
-                              ),
-                            ],
+                                IconButton(
+                                  icon: const Icon(Icons.close),
+                                  tooltip: '收起搜索',
+                                  onPressed: _closeSearch,
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      )
-                    : const SizedBox(width: double.infinity),
-              ),
-              Expanded(
-                child: _uiState.searchOpen
-                    ? ScheduleSearchResults(query: _uiState.searchQuery)
-                    : TabBarView(
-                        controller: _tabController,
-                        clipBehavior: Clip.none,
-                        children: [
-                          _MatchList(
-                            scrollController: _scrollControllers[0],
-                            matches: visible.followed,
-                            kickoffTexts:
-                                kickoffTextsFor(visible.followed, kickoffMap),
-                            emptyText: followedEmptyText,
-                            onRefresh: () => ref
-                                .read(worldCupDataProvider.notifier)
-                                .refresh(),
-                          ),
-                          _MatchList(
-                            scrollController: _scrollControllers[1],
-                            matches: visible.active,
-                            kickoffTexts:
-                                kickoffTextsFor(visible.active, kickoffMap),
-                            emptyText: _uiState.calendarOpen
-                                ? dayFilterEmpty
-                                : '暂无未完结赛程',
-                            onRefresh: () => ref
-                                .read(worldCupDataProvider.notifier)
-                                .refresh(),
-                          ),
-                          _MatchList(
-                            scrollController: _scrollControllers[2],
-                            matches: visible.finished,
-                            kickoffTexts:
-                                kickoffTextsFor(visible.finished, kickoffMap),
-                            emptyText: _uiState.calendarOpen
-                                ? dayFilterEmpty
-                                : '暂无已完场比赛',
-                            onRefresh: () => ref
-                                .read(worldCupDataProvider.notifier)
-                                .refresh(),
-                          ),
-                        ],
-                      ),
-              ),
-            ],
+                        )
+                      : const SizedBox(width: double.infinity),
+                ),
+              ],
+            ),
+            builder: (topInset) {
+              if (_uiState.searchOpen) {
+                return ScheduleSearchResults(
+                  query: _uiState.searchQuery,
+                  topInset: topInset,
+                );
+              }
+              return TabBarView(
+                controller: _tabController,
+                clipBehavior: Clip.none,
+                children: [
+                  _MatchList(
+                    scrollController: _scrollControllers[0],
+                    topInset: topInset,
+                    matches: visible.followed,
+                    kickoffTexts:
+                        kickoffTextsFor(visible.followed, kickoffMap),
+                    emptyText: followedEmptyText,
+                    onRefresh: () =>
+                        ref.read(worldCupDataProvider.notifier).refresh(),
+                  ),
+                  _MatchList(
+                    scrollController: _scrollControllers[1],
+                    topInset: topInset,
+                    matches: visible.active,
+                    kickoffTexts: kickoffTextsFor(visible.active, kickoffMap),
+                    emptyText: _uiState.calendarOpen
+                        ? dayFilterEmpty
+                        : '暂无未完结赛程',
+                    onRefresh: () =>
+                        ref.read(worldCupDataProvider.notifier).refresh(),
+                  ),
+                  _MatchList(
+                    scrollController: _scrollControllers[2],
+                    topInset: topInset,
+                    matches: visible.finished,
+                    kickoffTexts:
+                        kickoffTextsFor(visible.finished, kickoffMap),
+                    emptyText: _uiState.calendarOpen
+                        ? dayFilterEmpty
+                        : '暂无已完场比赛',
+                    onRefresh: () =>
+                        ref.read(worldCupDataProvider.notifier).refresh(),
+                  ),
+                ],
+              );
+            },
           );
         },
       ),
@@ -303,6 +311,7 @@ Map<String, String> kickoffTextsFor(
 class _MatchList extends StatelessWidget {
   const _MatchList({
     required this.scrollController,
+    required this.topInset,
     required this.matches,
     required this.kickoffTexts,
     required this.emptyText,
@@ -310,6 +319,7 @@ class _MatchList extends StatelessWidget {
   });
 
   final ScrollController scrollController;
+  final double topInset;
   final List<Match> matches;
   final Map<String, String> kickoffTexts;
   final String emptyText;
@@ -327,6 +337,7 @@ class _MatchList extends StatelessWidget {
               controller: scrollController,
               clipBehavior: Clip.none,
               physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.only(top: topInset + 8, bottom: bottomPad),
               children: [
                 SizedBox(
                   height: MediaQuery.sizeOf(context).height * 0.35,
@@ -337,14 +348,14 @@ class _MatchList extends StatelessWidget {
                     ),
                   ),
                 ),
-                SizedBox(height: bottomPad),
               ],
             )
           : ZSortedListView.builder(
               controller: scrollController,
               clipBehavior: Clip.none,
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.only(top: 8, bottom: bottomPad + 8),
+              padding:
+                  EdgeInsets.only(top: topInset + 8, bottom: bottomPad + 8),
               itemCount: matches.length,
               itemBuilder: (_, i) => MatchTile(
                 match: matches[i],

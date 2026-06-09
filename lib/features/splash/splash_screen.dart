@@ -2,8 +2,24 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
-/// 首次启动封面视频，播放完毕后渐变进入主界面。
+/// 首次启动封面视频，播放完毕后渐变进入欢迎页。
 /// 仅在 main.dart 判断为首次启动时挂载；非首次直接渲染 [child]。
+///
+/// ## 状态机（修改本文件前必读）
+/// 状态：
+///   - [_Phase.videoPlaying]：视频播放中。整段期间【不接受任何触摸交互】，用户只能等。
+///   - [_Phase.fading]：视频播放完毕，正在渐出，欢迎页在底层透出。
+///   - [_Phase.splashGone]：渐出完成，splash 不再绘制，欢迎页接管交互。
+///
+/// 允许触发 `videoPlaying → fading` 的【唯一入口】：视频自然播放结束。
+///   - 主信号：[_onVideoTick] 监听到 `isCompleted` 或 `position >= duration`。
+///   - 兜底：[_fallbackTimer]（按时长 + 余量计时，防止结束信号缺失而卡住）。
+///
+/// 【已按产品需求移除跳过逻辑】不再有跳过按钮、全屏触摸层、指针跟踪。用户无法提前结束，
+/// 必须等视频播完。因此"视频结束"（completed / 计时器）是进入欢迎页的正当且唯一入口，
+/// 不存在被误当作"跳过"而提前触发的风险。
+enum _Phase { videoPlaying, fading, splashGone }
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key, required this.child});
 
@@ -14,144 +30,112 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen>
-    with TickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   late final VideoPlayerController _video;
   late final AnimationController _fade;
   late final Animation<double> _opacity;
 
-  // Skip button animation
-  late final AnimationController _skipFade;
-  late final Animation<double> _skipOpacity;
-
   Timer? _fallbackTimer;
-  Timer? _skipHideTimer;
 
+  _Phase _phase = _Phase.videoPlaying;
   bool _videoReady = false;
-  bool _splashDone = false;
-  bool _fadeTriggered = false;
-  bool _skipVisible = false;
 
   @override
   void initState() {
     super.initState();
     _fade = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 700),
+      duration: const Duration(milliseconds: 350),
     )..addStatusListener((s) {
         if (s == AnimationStatus.completed && mounted) {
-          setState(() => _splashDone = true);
+          setState(() => _phase = _Phase.splashGone);
         }
       });
     _opacity = Tween<double>(begin: 1.0, end: 0.0)
         .animate(CurvedAnimation(parent: _fade, curve: Curves.easeInOut));
 
-    _skipFade = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 250),
-    );
-    _skipOpacity = CurvedAnimation(parent: _skipFade, curve: Curves.easeInOut);
-
     _initVideo();
   }
 
-  void _triggerFade() {
-    if (_fadeTriggered || !mounted) return;
-    _fadeTriggered = true;
+  /// `videoPlaying → fading` 的唯一汇聚点。
+  void _beginFade() {
+    if (_phase != _Phase.videoPlaying || !mounted) return;
     _fallbackTimer?.cancel();
-    _skipHideTimer?.cancel();
+    setState(() => _phase = _Phase.fading);
     _fade.forward();
-  }
-
-  /// 任意触屏按下即浮现跳过按钮（不用 onTap，避免触屏轻移导致手势未识别）。
-  void _onPointerDown(PointerDownEvent event) {
-    if (_fadeTriggered) return;
-
-    if (!_skipVisible) {
-      setState(() => _skipVisible = true);
-      _skipFade.forward(from: 0);
-    }
-
-    _skipHideTimer?.cancel();
-    _skipHideTimer = Timer(const Duration(seconds: 3), _hideSkip);
-  }
-
-  void _hideSkip() {
-    if (!mounted || _fadeTriggered) return;
-    _skipFade.reverse().then((_) {
-      if (mounted) setState(() => _skipVisible = false);
-    });
   }
 
   Future<void> _initVideo() async {
     _video = VideoPlayerController.asset('assets/videos/cover.mp4');
     try {
-      await _video.initialize().timeout(const Duration(seconds: 8));
+      await _video.initialize().timeout(const Duration(seconds: 12));
     } catch (_) {
-      if (mounted) setState(() => _splashDone = true);
+      // 初始化失败/超时：直接进入欢迎页，避免黑屏卡死。
+      if (mounted) setState(() => _phase = _Phase.splashGone);
       return;
     }
 
     await _video.setLooping(false);
     _video.addListener(_onVideoTick);
 
-    final duration = _video.value.duration;
-    if (duration > Duration.zero) {
-      _fallbackTimer = Timer(duration + const Duration(milliseconds: 800), _triggerFade);
-    } else {
-      _fallbackTimer = Timer(const Duration(seconds: 15), _triggerFade);
-    }
-
     if (mounted) {
       setState(() => _videoReady = true);
       await _video.play();
+      _startVideoEndTimer();
     }
   }
 
+  /// 视频帧回调：检测自然播放结束。无跳过逻辑后，这是进入欢迎页的正当信号。
   void _onVideoTick() {
-    if (_fadeTriggered) return;
-    final val = _video.value;
-    if (val.hasError) {
-      _triggerFade();
-      return;
-    }
-    if (!val.isInitialized || val.duration == Duration.zero) return;
-    if (!val.isPlaying && !val.isBuffering &&
-        val.duration - val.position <= const Duration(milliseconds: 300)) {
-      _triggerFade();
-    }
+    if (_phase != _Phase.videoPlaying) return;
+    final v = _video.value;
+    if (!v.isInitialized) return;
+    final dur = v.duration;
+    final ended = v.isCompleted ||
+        (dur > Duration.zero &&
+            v.position >= dur - const Duration(milliseconds: 120));
+    if (ended) _beginFade();
+  }
+
+  /// 兜底计时器：万一结束信号缺失，按时长 + 余量也会转场。
+  void _startVideoEndTimer() {
+    final duration = _video.value.duration;
+    _fallbackTimer = Timer(
+      duration > Duration.zero
+          ? duration + const Duration(milliseconds: 800)
+          : const Duration(seconds: 15),
+      _beginFade,
+    );
   }
 
   @override
   void dispose() {
     _fallbackTimer?.cancel();
-    _skipHideTimer?.cancel();
     _video.removeListener(_onVideoTick);
     _video.dispose();
     _fade.dispose();
-    _skipFade.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final splashGone = _phase == _Phase.splashGone;
     final size = _videoReady ? _video.value.size : Size.zero;
     final hasValidSize = size != Size.zero;
-    final topPadding = MediaQuery.of(context).padding.top;
 
-    // 欢迎页始终占 Stack 同一槽位。勿在 _splashDone 后 return widget.child，
-    // 否则 WelcomePage 会从 IgnorePointer 子树移到 Splash 直系子节点而 remount，
-    // initState 里的淡入会再播一遍，表现为静态封面闪一下/重复出现。
+    // 欢迎页始终占 Stack 同一槽位。勿在 splashGone 后 return widget.child，
+    // 否则 WelcomePage 会 remount，淡入再播一遍。
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Stack(
         fit: StackFit.expand,
         children: [
           IgnorePointer(
-            ignoring: !_splashDone,
+            ignoring: !splashGone,
             child: widget.child,
           ),
-          if (!_splashDone) ...[
-            // Video layer — pure visual, no hit-test logic here
+          if (!splashGone)
+            // 视频层 —— 纯视觉，整段 splash 不接受任何交互（无跳过）。
             IgnorePointer(
               child: FadeTransition(
                 opacity: _opacity,
@@ -170,59 +154,6 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
               ),
             ),
-            // Full-screen touch layer. Keep it as a Stack child so it is always
-            // hit-testable even though the visual layers are IgnorePointer.
-            if (!_fadeTriggered)
-              Positioned.fill(
-                child: Listener(
-                  behavior: HitTestBehavior.opaque,
-                  onPointerDown: _onPointerDown,
-                ),
-              ),
-            // Skip button — 置于最上层，点击立即淡出
-            if (_skipVisible)
-              Positioned(
-                top: topPadding + 16,
-                right: 20,
-                child: FadeTransition(
-                  opacity: _skipOpacity,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: _triggerFade,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.42),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.42),
-                          width: 0.8,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.24),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const Text(
-                        '跳过',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-          ],
         ],
       ),
     );
